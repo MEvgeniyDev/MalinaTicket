@@ -1,6 +1,6 @@
 # Development
 
-MalinaTicket is a small Paper/Purpur plugin. The project intentionally stays close to the Bukkit/Paper API and avoids runtime dependencies beyond what the server already provides.
+MalinaTicket is a small Paper/Purpur 1.21.11 plugin built against Paper API 26.1.2. The project intentionally stays close to the Bukkit/Paper API and avoids runtime dependencies beyond what the server already provides.
 
 ## Local Build
 
@@ -27,7 +27,7 @@ If `GIT_COMMIT` is not set, the JAR manifest keeps `Built-From-Revision: local`.
 1. Run `.\gradlew.bat clean test`.
 2. Run `.\gradlew.bat clean build`.
 3. Inspect the JAR with `jar tf build/libs/MalinaTicket-26.5.8.jar`.
-4. Copy the JAR to a clean Paper/Purpur 26.1.2 server.
+4. Copy the JAR to a clean Paper/Purpur 1.21.11 server with API 26.1.2.
 5. Verify `/ticket`, create, comment, close, staff GUI, reload, and restart persistence.
 6. Confirm Russian messages render correctly in chat, GUI lore, and console.
 
