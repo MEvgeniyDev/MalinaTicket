@@ -1,0 +1,147 @@
+name: MalinaTicket
+version: '${version}'
+main: ru.mevgeniy.malinaticket.MalinaTicketPlugin
+description: Система тикетов и репортов для игроков и персонала.
+author: MEvgeniy
+website: https://github.com/MEvgeniy
+api-version: '26.1.2'
+prefix: MalinaTicket
+load: POSTWORLD
+
+commands:
+  ticket:
+    description: Открывает систему тикетов.
+    usage: /ticket
+    aliases: [tickets, report, reports, support, mt, mticket]
+
+permissions:
+  malinaticket.use:
+    description: Позволяет открыть меню тикетов.
+    default: true
+  malinaticket.create:
+    description: Позволяет создавать тикеты.
+    default: true
+  malinaticket.view.own:
+    description: Позволяет смотреть свои тикеты.
+    default: true
+  malinaticket.comment.own:
+    description: Позволяет отвечать в своих тикетах.
+    default: true
+  malinaticket.close.own:
+    description: Позволяет закрывать свои тикеты.
+    default: true
+  malinaticket.category.bug.create:
+    description: Позволяет создавать тикеты в категории Баг.
+    default: true
+  malinaticket.category.player_report.create:
+    description: Позволяет создавать тикеты в категории Жалоба на игрока.
+    default: true
+  malinaticket.category.rules.create:
+    description: Позволяет создавать тикеты в категории Нарушение правил.
+    default: true
+  malinaticket.category.items.create:
+    description: Позволяет создавать тикеты в категории Потеря вещей.
+    default: true
+  malinaticket.category.donate.create:
+    description: Позволяет создавать тикеты в категории Донат / покупка.
+    default: true
+  malinaticket.category.question.create:
+    description: Позволяет создавать тикеты в категории Вопрос.
+    default: true
+  malinaticket.category.other.create:
+    description: Позволяет создавать тикеты в категории Другое.
+    default: true
+  malinaticket.staff:
+    description: Базовые права персонала тикетов.
+    default: op
+    children:
+      malinaticket.use: true
+      malinaticket.view.all: true
+      malinaticket.view.closed: true
+      malinaticket.comment.staff: true
+      malinaticket.assign: true
+      malinaticket.close: true
+      malinaticket.reopen: true
+      malinaticket.teleport: true
+      malinaticket.notify.create: true
+      malinaticket.notify.comment: true
+      malinaticket.notify.close: true
+      malinaticket.notify.join: true
+  malinaticket.staff.gui:
+    description: Позволяет открыть меню персонала.
+    default: op
+  malinaticket.view.all:
+    description: Позволяет видеть все открытые тикеты.
+    default: op
+  malinaticket.view.closed:
+    description: Позволяет видеть закрытые тикеты.
+    default: op
+  malinaticket.view.deleted:
+    description: Позволяет видеть мягко удаленные тикеты.
+    default: op
+  malinaticket.comment.staff:
+    description: Позволяет персоналу отвечать в тикетах.
+    default: op
+  malinaticket.assign:
+    description: Позволяет назначать ответственного.
+    default: op
+  malinaticket.close:
+    description: Позволяет закрывать чужие тикеты.
+    default: op
+  malinaticket.reopen:
+    description: Позволяет переоткрывать тикеты.
+    default: op
+  malinaticket.delete:
+    description: Позволяет мягко удалять тикеты.
+    default: op
+  malinaticket.purge:
+    description: Позволяет окончательно удалять тикеты.
+    default: op
+  malinaticket.teleport:
+    description: Позволяет телепортироваться к месту создания тикета.
+    default: op
+  malinaticket.stats:
+    description: Позволяет смотреть статистику тикетов.
+    default: op
+  malinaticket.reload:
+    description: Позволяет перезагружать конфиги плагина.
+    default: op
+  malinaticket.ban:
+    description: Позволяет запрещать игрокам создание тикетов.
+    default: op
+  malinaticket.unban:
+    description: Позволяет снимать запрет создания тикетов.
+    default: op
+  malinaticket.bypass.cooldown:
+    description: Обход задержки создания тикетов.
+    default: op
+  malinaticket.bypass.limit:
+    description: Обход лимита открытых тикетов.
+    default: op
+  malinaticket.notify.create:
+    description: Уведомления персоналу о новых тикетах.
+    default: op
+  malinaticket.notify.comment:
+    description: Уведомления персоналу о новых комментариях.
+    default: op
+  malinaticket.notify.close:
+    description: Уведомления персоналу о закрытии тикетов.
+    default: op
+  malinaticket.notify.join:
+    description: Сводка тикетов для персонала при входе на сервер.
+    default: op
+  malinaticket.admin:
+    description: Полный доступ к MalinaTicket.
+    default: op
+    children:
+      malinaticket.staff: true
+      malinaticket.staff.gui: true
+      malinaticket.view.deleted: true
+      malinaticket.delete: true
+      malinaticket.purge: true
+      malinaticket.stats: true
+      malinaticket.reload: true
+      malinaticket.ban: true
+      malinaticket.unban: true
+      malinaticket.bypass.cooldown: true
+      malinaticket.bypass.limit: true

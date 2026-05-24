@@ -1,0 +1,63 @@
+plugin:
+  reloaded: "<#88C999>Конфиги MalinaTicket перезагружены."
+
+input:
+  create: "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>Напиши текст обращения в чат. <click:run_command:'/ticket cancel'><hover:show_text:'<#FBE8EE>Отменить ввод'><#E05A47>[Отмена]</hover></click>"
+  comment: "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>Напиши ответ в тикет <#F4A6B8>#%id%<#FBE8EE>. <click:run_command:'/ticket cancel'><hover:show_text:'<#FBE8EE>Отменить ввод'><#E05A47>[Отмена]</hover></click>"
+  close: "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>Напиши причину закрытия тикета <#F4A6B8>#%id%<#FBE8EE>. <click:run_command:'/ticket cancel'><hover:show_text:'<#FBE8EE>Отменить ввод'><#E05A47>[Отмена]</hover></click>"
+  cancelled: "<#F2C14E>Ввод отменен."
+  nothing-to-cancel: "<#6B5961>Сейчас нечего отменять."
+
+errors:
+  no-permission: "<#E05A47>Недостаточно прав для этого действия."
+  only-player: "<#E05A47>Эта команда доступна только игроку."
+  unknown-command: "<#E05A47>Неизвестная подкоманда."
+  usage: "<#F2C14E>Использование: <#FBE8EE>%usage%"
+  invalid-number: "<#E05A47>ID тикета должен быть числом."
+  ticket-not-found: "<#E05A47>Тикет не найден."
+  ticket-deleted: "<#E05A47>Этот тикет удален и недоступен для изменения."
+  ticket-not-open: "<#E05A47>Действие доступно только для открытого тикета."
+  ticket-not-closed: "<#E05A47>Переоткрыть можно только закрытый тикет."
+  ticket-not-deleted: "<#E05A47>Окончательно удалить можно только уже удаленный тикет."
+  player-not-found: "<#E05A47>Игрок сейчас не найден на сервере."
+  world-not-found: "<#E05A47>Мир тикета не найден. Возможно, он был удален или переименован."
+  creation-banned: "<#E05A47>Тебе временно запрещено создавать тикеты."
+  category-no-permission: "<#E05A47>У тебя нет доступа к этой категории."
+  empty-message: "<#E05A47>Сообщение не может быть пустым."
+  message-too-long: "<#E05A47>Сообщение слишком длинное. Максимум: <#F2C14E>%max%<#E05A47> символов."
+  open-limit: "<#E05A47>У тебя уже есть максимум открытых тикетов: <#F2C14E>%limit%<#E05A47>."
+  cooldown: "<#F2C14E>Подожди еще <#FBE8EE>%seconds% сек.<#F2C14E> перед созданием нового тикета."
+
+ticket:
+  created: "<#88C999>Тикет <#F4A6B8>#%id% <#88C999>создан. Персонал получил уведомление. <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  comment-added: "<#88C999>Комментарий добавлен в тикет <#F4A6B8>#%id%<#88C999>. <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  closed: "<#88C999>Тикет <#F4A6B8>#%id% <#88C999>закрыт. <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  reopened: "<#88C999>Тикет <#F4A6B8>#%id% <#88C999>переоткрыт. <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  deleted: "<#F2C14E>Тикет <#F4A6B8>#%id% <#F2C14E>мягко удален. <click:run_command:'/ticket staff'><hover:show_text:'<#FBE8EE>Открыть меню персонала'><#F4A6B8>[Персонал]</hover></click>"
+  purged: "<#E05A47>Тикет <#F4A6B8>#%id% <#E05A47>окончательно удален. <click:run_command:'/ticket staff'><hover:show_text:'<#FBE8EE>Открыть меню персонала'><#F4A6B8>[Персонал]</hover></click>"
+  assigned: "<#88C999>Тикет <#F4A6B8>#%id% <#88C999>назначен на <#F4A6B8>%assigned%<#88C999>. <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  teleported: "<#88C999>Телепортация к месту тикета <#F4A6B8>#%id%<#88C999>."
+  creation-ban-added: "<#F2C14E>Игроку <#F4A6B8>%player% <#F2C14E>запрещено создавать тикеты."
+  creation-ban-removed: "<#88C999>Игроку <#F4A6B8>%player% <#88C999>снова разрешено создавать тикеты."
+  stats: "<#D94F70>Статистика: <#88C999>открыто %open% <#6B5961>| <#F4A6B8>закрыто %closed% <#6B5961>| <#E05A47>удалено %deleted%"
+  info: "<#D94F70>Тикет #%id% <#6B5961>| <#FBE8EE>%player%, %category%, важность %priority%, статус %status%. Последнее: <#F4A6B8>%last_message%"
+
+notify:
+  new-ticket: "<#D94F70><bold>Новый тикет</bold> <#6B5961>| <#FBE8EE>#%id% от <#F4A6B8>%player% <#6B5961>| <#FBE8EE>%category% / %priority% <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click> <click:suggest_command:'/ticket comment %id% '><hover:show_text:'<#FBE8EE>Подготовить ответ'><#88C999>[Ответить]</hover></click> <click:run_command:'/ticket tp %id%'><hover:show_text:'<#FBE8EE>К месту создания'><#F2C14E>[К месту]</hover></click>"
+  player-comment: "<#F4A6B8>Игрок ответил в тикет <#D94F70>#%id%<#F4A6B8>: <#FBE8EE>%last_message% <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click> <click:suggest_command:'/ticket comment %id% '><hover:show_text:'<#FBE8EE>Подготовить ответ'><#88C999>[Ответить]</hover></click>"
+  staff-closed: "<#F2C14E>Тикет <#F4A6B8>#%id% <#F2C14E>закрыт: <#FBE8EE>%close_reason% <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  staff-join-header: "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>Сводка заявок"
+  staff-join-stats: "<#FBE8EE>Открыто: <#F2C14E>%open% <#6B5961>| <#FBE8EE>назначено тебе: <#F4A6B8>%assigned% <#6B5961>| <#FBE8EE>без ответственного: <#E05A47>%unassigned%"
+  staff-join-extra: "<#6B5961>Закрыто: %closed% | удалено: %deleted%"
+  staff-join-latest: "<#FBE8EE>Последний открытый: <#D94F70>#%latest_id% <#6B5961>| <#F4A6B8>%latest_player% <click:run_command:'/ticket view %latest_id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  staff-join-empty: "<#88C999>Открытых тикетов сейчас нет."
+  staff-join-command: "<#6B5961>Открыть меню персонала: <click:run_command:'/ticket staff'><hover:show_text:'<#FBE8EE>Открыть меню персонала'><#FBE8EE>[Персонал]</hover></click>"
+  owner-comment: "<#D94F70>В твоем тикете <#F4A6B8>#%id% <#D94F70>появился ответ: <#FBE8EE>%last_message% <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click> <click:suggest_command:'/ticket comment %id% '><hover:show_text:'<#FBE8EE>Подготовить ответ'><#88C999>[Ответить]</hover></click>"
+  owner-closed: "<#88C999>Твой тикет <#F4A6B8>#%id% <#88C999>закрыт. Причина: <#FBE8EE>%close_reason% <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  owner-reopened: "<#F2C14E>Твой тикет <#F4A6B8>#%id% <#F2C14E>переоткрыт. <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click> <click:suggest_command:'/ticket comment %id% '><hover:show_text:'<#FBE8EE>Подготовить ответ'><#88C999>[Ответить]</hover></click>"
+  offline-header: "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>Пока тебя не было, пришли уведомления: <#F4A6B8>%count%"
+
+offline:
+  owner-comment: "<#D94F70>В твоем тикете <#F4A6B8>#%id% <#D94F70>появился ответ: <#FBE8EE>%last_message% <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click> <click:suggest_command:'/ticket comment %id% '><hover:show_text:'<#FBE8EE>Подготовить ответ'><#88C999>[Ответить]</hover></click>"
+  owner-closed: "<#88C999>Твой тикет <#F4A6B8>#%id% <#88C999>закрыт. Причина: <#FBE8EE>%close_reason% <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click>"
+  owner-reopened: "<#F2C14E>Твой тикет <#F4A6B8>#%id% <#F2C14E>переоткрыт. <click:run_command:'/ticket view %id%'><hover:show_text:'<#FBE8EE>Открыть тикет'><#F4A6B8>[Открыть]</hover></click> <click:suggest_command:'/ticket comment %id% '><hover:show_text:'<#FBE8EE>Подготовить ответ'><#88C999>[Ответить]</hover></click>"

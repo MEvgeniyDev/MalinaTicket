@@ -1,0 +1,12 @@
+.gradle/
+build/
+out/
+*.iml
+.idea/
+
+*.log
+*.tmp
+*.swp
+
+plugins/MalinaTicket/tickets/
+server/

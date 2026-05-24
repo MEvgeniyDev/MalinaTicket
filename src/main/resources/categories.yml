@@ -1,0 +1,76 @@
+# Категории тикетов. Можно добавлять свои разделы в categories.
+# permission можно оставить пустым, если категория доступна всем с malinaticket.create.
+# Для ресурспаков можно добавить custom-model-data: 12345.
+# Если поле не указано, модель предмета не меняется.
+
+categories:
+  bug:
+    name: "Баг"
+    material: "REDSTONE_TORCH"
+    slot: 10
+    amount: 1
+    glow: false
+    color: "#E05A47"
+    permission: "malinaticket.category.bug.create"
+    description:
+      - "<#FBE8EE>Ошибки сервера, механик, предметов или команд."
+  player_report:
+    name: "Жалоба на игрока"
+    material: "IRON_SWORD"
+    slot: 11
+    amount: 1
+    glow: false
+    color: "#D94F70"
+    permission: "malinaticket.category.player_report.create"
+    description:
+      - "<#FBE8EE>Читы, токсичность, гриферство или подозрительное поведение."
+  rules:
+    name: "Нарушение правил"
+    material: "BOOK"
+    slot: 12
+    amount: 1
+    glow: false
+    color: "#F2C14E"
+    permission: "malinaticket.category.rules.create"
+    description:
+      - "<#FBE8EE>Ситуации, где нужна оценка администрации."
+  items:
+    name: "Потеря вещей"
+    material: "CHEST"
+    slot: 13
+    amount: 1
+    glow: false
+    color: "#F4A6B8"
+    permission: "malinaticket.category.items.create"
+    description:
+      - "<#FBE8EE>Пропажа предметов, откаты, спорные смерти."
+  donate:
+    name: "Донат / покупка"
+    material: "EMERALD"
+    slot: 14
+    amount: 1
+    glow: false
+    color: "#88C999"
+    permission: "malinaticket.category.donate.create"
+    description:
+      - "<#FBE8EE>Платежи, привилегии, ключи и покупки."
+  question:
+    name: "Вопрос"
+    material: "COMPASS"
+    slot: 15
+    amount: 1
+    glow: false
+    color: "#F4A6B8"
+    permission: "malinaticket.category.question.create"
+    description:
+      - "<#FBE8EE>Когда нужна подсказка от персонала."
+  other:
+    name: "Другое"
+    material: "PAPER"
+    slot: 16
+    amount: 1
+    glow: false
+    color: "#D94F70"
+    permission: "malinaticket.category.other.create"
+    description:
+      - "<#FBE8EE>Все, что не подошло под остальные категории."

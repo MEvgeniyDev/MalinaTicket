@@ -1,0 +1,27 @@
+# MalinaTicket 26.5.8
+# Автор: MEvgeniy
+# Paper/Purpur 26.1.2.
+
+settings:
+  # Задержка между тикетами от одного игрока.
+  cooldown-seconds: 60
+
+  # Лимит открытых тикетов без права malinaticket.bypass.limit.
+  max-open-tickets: 3
+
+  # Максимальная длина текста тикета и комментария.
+  max-message-length: 500
+
+  # Количество тикетов на странице GUI.
+  tickets-per-page: 45
+
+  # Перехватывать следующее сообщение игрока после клика в GUI.
+  capture-chat-inputs: true
+
+  # Формат дат в сообщениях и GUI.
+  date-format: "dd.MM.yyyy HH:mm"
+  time-zone: "Europe/Moscow"
+
+  gui-click-sound:
+    enabled: true
+    sound: "UI_BUTTON_CLICK"

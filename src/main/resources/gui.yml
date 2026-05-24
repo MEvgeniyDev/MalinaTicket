@@ -1,0 +1,267 @@
+# GUI MalinaTicket.
+# Цвет текста: <#D94F70>текст.
+# Названия и описания предметов выводятся без курсива.
+# У любого предмета можно указать amount, glow и custom-model-data.
+
+ticket-list-slots:
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+  - 28
+  - 29
+  - 30
+  - 31
+  - 32
+  - 33
+  - 34
+  - 37
+  - 38
+  - 39
+  - 40
+  - 41
+  - 42
+  - 43
+
+menus:
+  main:
+    title: "<#D94F70>MalinaTicket <#6B5961>| <#FBE8EE>Игрок"
+    size: 36
+  staff:
+    title: "<#D94F70>MalinaTicket <#6B5961>| <#FBE8EE>Персонал"
+    size: 45
+  create:
+    title: "<#D94F70>Новый тикет <#6B5961>| <#FBE8EE>%category% / важность %priority%"
+    size: 54
+  list:
+    title: "<#D94F70>Тикеты <#6B5961>| <#FBE8EE>страница %page%/%pages%"
+    size: 54
+  view:
+    title: "<#D94F70>Тикет #%id% <#6B5961>| <#FBE8EE>%status%"
+    size: 54
+  close_reasons:
+    title: "<#D94F70>Закрытие #%id% <#6B5961>| <#FBE8EE>причина"
+    size: 27
+
+items:
+  filler:
+    slot: -1
+    material: "GRAY_STAINED_GLASS_PANE"
+    name: " "
+    amount: 1
+    glow: false
+    lore: []
+
+  main:
+    create:
+      slot: 11
+      material: "WRITABLE_BOOK"
+      name: "<#D94F70>Создать тикет"
+      amount: 1
+      glow: false
+      lore:
+        - "<#FBE8EE>Новое обращение в поддержку."
+        - "<#6B5961>Текст будет введен через чат."
+    open:
+      slot: 13
+      material: "BOOK"
+      name: "<#F4A6B8>Мои тикеты"
+      lore:
+        - "<#FBE8EE>Открытые обращения."
+    closed:
+      slot: 15
+      material: "CHEST"
+      name: "<#F4A6B8>Закрытые"
+      lore:
+        - "<#FBE8EE>История решенных обращений."
+    staff:
+      slot: 31
+      material: "AMETHYST_SHARD"
+      name: "<#F2C14E>Персонал"
+      lore:
+        - "<#FBE8EE>Меню обработки тикетов."
+
+  staff:
+    open:
+      slot: 10
+      material: "LIME_DYE"
+      name: "<#88C999>Открытые"
+      lore:
+        - "<#FBE8EE>Все тикеты, ожидающие ответа."
+    closed:
+      slot: 12
+      material: "GRAY_DYE"
+      name: "<#F4A6B8>Закрытые"
+      lore:
+        - "<#FBE8EE>Завершенные обращения."
+    mine:
+      slot: 14
+      material: "NAME_TAG"
+      name: "<#F2C14E>Назначены мне"
+      lore:
+        - "<#FBE8EE>Тикеты, где ты ответственный."
+    deleted:
+      slot: 16
+      material: "BARRIER"
+      name: "<#E05A47>Удаленные"
+      lore:
+        - "<#FBE8EE>Мягко удаленные тикеты."
+
+  create:
+    finalize:
+      slot: 49
+      material: "LIME_CONCRETE"
+      name: "<#88C999>Написать обращение"
+      lore:
+        - "<#FBE8EE>Нажми и напиши текст в чат."
+        - "<#6B5961>Для отмены напиши: отмена."
+
+  ticket:
+    item:
+      # Слот шаблона. Позиции тикетов задаются в ticket-list-slots.
+      slot: 0
+      material: "PAPER"
+      name: "<#D94F70>Тикет #%id%"
+      lore:
+        - "<#FBE8EE>Игрок: <#F4A6B8>%player%"
+        - "<#FBE8EE>Категория: <#F4A6B8>%category%"
+        - "<#FBE8EE>Важность: <#F2C14E>%priority%"
+        - "<#FBE8EE>Статус: <#88C999>%status%"
+        - "<#6B5961>%first_message%"
+
+  view:
+    info:
+      slot: 11
+      material: "BOOK"
+      name: "<#D94F70>Информация"
+      lore:
+        - "<#FBE8EE>Тикет: <#F4A6B8>#%id%"
+        - "<#FBE8EE>Игрок: <#F4A6B8>%player%"
+        - "<#FBE8EE>Категория: <#F4A6B8>%category%"
+        - "<#FBE8EE>Важность: <#F2C14E>%priority%"
+        - "<#FBE8EE>Создан: <#F4A6B8>%created%"
+        - "<#FBE8EE>Место: <#F4A6B8>%location%"
+    comment:
+      slot: 28
+      material: "FEATHER"
+      name: "<#88C999>Ответить"
+      lore:
+        - "<#FBE8EE>Добавить сообщение в тикет."
+    close:
+      slot: 30
+      material: "REDSTONE"
+      name: "<#E05A47>Закрыть"
+      lore:
+        - "<#FBE8EE>Выбрать причину закрытия."
+    reopen:
+      slot: 30
+      material: "LIME_DYE"
+      name: "<#88C999>Переоткрыть"
+      lore:
+        - "<#FBE8EE>Вернуть тикет в работу."
+    teleport:
+      slot: 32
+      material: "ENDER_PEARL"
+      name: "<#F2C14E>К месту"
+      lore:
+        - "<#FBE8EE>%location%"
+    delete:
+      slot: 34
+      material: "BARRIER"
+      name: "<#E05A47>Удалить"
+      lore:
+        - "<#FBE8EE>Скрыть тикет из обычных списков."
+    purge:
+      slot: 34
+      material: "LAVA_BUCKET"
+      name: "<#E05A47>Удалить навсегда"
+      lore:
+        - "<#FBE8EE>Окончательно стереть запись."
+
+  close-reasons:
+    resolved:
+      slot: 10
+      material: "LIME_WOOL"
+      name: "<#88C999>Проблема решена"
+      reason: "Проблема решена"
+      custom: false
+      lore:
+        - "<#FBE8EE>Вопрос закрыт, решение найдено."
+    no_info:
+      slot: 11
+      material: "YELLOW_WOOL"
+      name: "<#F2C14E>Недостаточно информации"
+      reason: "Недостаточно информации"
+      custom: false
+      lore:
+        - "<#FBE8EE>Не хватает деталей для проверки."
+    duplicate:
+      slot: 12
+      material: "PAPER"
+      name: "<#F4A6B8>Дубликат обращения"
+      reason: "Дубликат обращения"
+      custom: false
+      lore:
+        - "<#FBE8EE>Такая заявка уже есть."
+    not_confirmed:
+      slot: 13
+      material: "LIGHT_GRAY_WOOL"
+      name: "<#A8A8A8>Нарушение не подтверждено"
+      reason: "Нарушение не подтверждено"
+      custom: false
+      lore:
+        - "<#FBE8EE>Доказательств недостаточно."
+    not_server:
+      slot: 14
+      material: "COMPASS"
+      name: "<#F39A4A>Не относится к серверу"
+      reason: "Не относится к серверу"
+      custom: false
+      lore:
+        - "<#FBE8EE>Проблема вне зоны поддержки."
+    cancelled:
+      slot: 15
+      material: "GRAY_DYE"
+      name: "<#6B5961>Отменено игроком"
+      reason: "Отменено игроком"
+      custom: false
+      lore:
+        - "<#FBE8EE>Автор отказался от обращения."
+    custom:
+      slot: 16
+      material: "FEATHER"
+      name: "<#D94F70>Своя причина"
+      reason: ""
+      custom: true
+      glow: true
+      lore:
+        - "<#FBE8EE>Написать причину вручную в чат."
+
+  navigation:
+    previous:
+      slot: 45
+      material: "ARROW"
+      name: "<#FBE8EE>Страница назад"
+      lore:
+        - "<#6B5961>Предыдущая страница."
+    next:
+      slot: 53
+      material: "ARROW"
+      name: "<#FBE8EE>Страница вперед"
+      lore:
+        - "<#6B5961>Следующая страница."
+    back:
+      slot: 49
+      material: "ARROW"
+      name: "<#FBE8EE>Вернуться"
+      lore: []

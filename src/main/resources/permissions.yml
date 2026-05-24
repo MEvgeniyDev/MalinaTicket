@@ -1,0 +1,43 @@
+# Памятка по правам MalinaTicket.
+# Основные права уже объявлены в plugin.yml, этот файл нужен как удобная документация.
+
+player:
+  - "malinaticket.use"
+  - "malinaticket.create"
+  - "malinaticket.view.own"
+  - "malinaticket.comment.own"
+  - "malinaticket.close.own"
+  - "malinaticket.category.bug.create"
+  - "malinaticket.category.player_report.create"
+  - "malinaticket.category.rules.create"
+  - "malinaticket.category.items.create"
+  - "malinaticket.category.donate.create"
+  - "malinaticket.category.question.create"
+  - "malinaticket.category.other.create"
+
+staff:
+  - "malinaticket.staff"
+  - "malinaticket.staff.gui"
+  - "malinaticket.view.all"
+  - "malinaticket.view.closed"
+  - "malinaticket.comment.staff"
+  - "malinaticket.assign"
+  - "malinaticket.close"
+  - "malinaticket.reopen"
+  - "malinaticket.teleport"
+  - "malinaticket.notify.create"
+  - "malinaticket.notify.comment"
+  - "malinaticket.notify.close"
+  - "malinaticket.notify.join"
+
+admin:
+  - "malinaticket.admin"
+  - "malinaticket.view.deleted"
+  - "malinaticket.delete"
+  - "malinaticket.purge"
+  - "malinaticket.stats"
+  - "malinaticket.reload"
+  - "malinaticket.ban"
+  - "malinaticket.unban"
+  - "malinaticket.bypass.cooldown"
+  - "malinaticket.bypass.limit"
