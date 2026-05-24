@@ -1,5 +1,9 @@
 # MalinaTicket
 
+<p align="center">
+  <img src="assets/malinaticket-preview.png" alt="MalinaTicket" width="720">
+</p>
+
 MalinaTicket - простой тикет-плагин для Paper/Purpur `1.21.11` с API `26.1.2`. Он закрывает обычный сценарий небольшого сервера: игрок оставляет обращение через GUI, персонал отвечает, назначает ответственного и закрывает тикет с причиной.
 
 Автор: `MEvgeniy`
