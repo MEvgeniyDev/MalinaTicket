@@ -66,6 +66,75 @@ jar tf build/libs/MalinaTicket-26.5.8.jar
 - `/ticket cancel` - отменить ввод текста через чат.
 - `/ticket reload` - перечитать конфиги.
 
+## Права
+
+Для обычных игроков основные права по умолчанию доступны всем. Для персонала обычно достаточно выдать `malinaticket.staff`, для полного управления - `malinaticket.admin`.
+
+### Готовые наборы
+
+| Право | По умолчанию | За что отвечает |
+| --- | --- | --- |
+| `malinaticket.staff` | op | Базовый набор прав персонала: просмотр тикетов, ответы, назначение, закрытие, переоткрытие, телепорт и уведомления. |
+| `malinaticket.admin` | op | Полный доступ к MalinaTicket, включая удаление, статистику, reload, ban/unban и обход лимитов. |
+
+### Игроки
+
+| Право | По умолчанию | За что отвечает |
+| --- | --- | --- |
+| `malinaticket.use` | everyone | Открытие меню тикетов. |
+| `malinaticket.create` | everyone | Создание тикетов. |
+| `malinaticket.view.own` | everyone | Просмотр своих тикетов. |
+| `malinaticket.comment.own` | everyone | Ответы в своих тикетах. |
+| `malinaticket.close.own` | everyone | Закрытие своих тикетов. |
+
+### Персонал
+
+| Право | По умолчанию | За что отвечает |
+| --- | --- | --- |
+| `malinaticket.staff.gui` | op | Открытие меню персонала. |
+| `malinaticket.view.all` | op | Просмотр всех открытых тикетов. |
+| `malinaticket.view.closed` | op | Просмотр закрытых тикетов. |
+| `malinaticket.view.deleted` | op | Просмотр мягко удаленных тикетов. |
+| `malinaticket.comment.staff` | op | Ответы персонала в тикетах. |
+| `malinaticket.assign` | op | Назначение ответственного. |
+| `malinaticket.close` | op | Закрытие чужих тикетов. |
+| `malinaticket.reopen` | op | Переоткрытие тикетов. |
+| `malinaticket.delete` | op | Мягкое удаление тикетов. |
+| `malinaticket.purge` | op | Окончательное удаление тикетов. |
+| `malinaticket.teleport` | op | Телепорт к месту создания тикета. |
+| `malinaticket.stats` | op | Просмотр статистики. |
+| `malinaticket.reload` | op | Перезагрузка конфигов плагина. |
+| `malinaticket.ban` | op | Запрет игроку создавать тикеты. |
+| `malinaticket.unban` | op | Снятие запрета на создание тикетов. |
+
+### Уведомления
+
+| Право | По умолчанию | За что отвечает |
+| --- | --- | --- |
+| `malinaticket.notify.create` | op | Уведомления персоналу о новых тикетах. |
+| `malinaticket.notify.comment` | op | Уведомления о новых комментариях. |
+| `malinaticket.notify.close` | op | Уведомления о закрытии тикетов. |
+| `malinaticket.notify.join` | op | Сводка по тикетам при входе персонала. |
+
+### Обходы
+
+| Право | По умолчанию | За что отвечает |
+| --- | --- | --- |
+| `malinaticket.bypass.cooldown` | op | Обход задержки создания тикета. |
+| `malinaticket.bypass.limit` | op | Обход лимита открытых тикетов. |
+
+### Категории
+
+Права категорий создаются по шаблону `malinaticket.category.<id>.create`. В стандартной конфигурации есть:
+
+- `malinaticket.category.bug.create`
+- `malinaticket.category.player_report.create`
+- `malinaticket.category.rules.create`
+- `malinaticket.category.items.create`
+- `malinaticket.category.donate.create`
+- `malinaticket.category.question.create`
+- `malinaticket.category.other.create`
+
 ## Настройка
 
 Категории меняются в `categories.yml`. Для каждой категории можно задать материал, слот, цвет, описание и отдельное право доступа. GUI-предметы в `gui.yml` поддерживают `material`, `name`, `lore`, `slot`, `amount`, `glow` и `custom-model-data`. Причины закрытия тикетов тоже настраиваются в `gui.yml`. Сообщения и GUI-тексты используют MiniMessage-формат, поэтому после правок стоит проверить русские символы и кликабельные подсказки прямо в игре.
