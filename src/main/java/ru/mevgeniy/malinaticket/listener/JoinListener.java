@@ -30,7 +30,7 @@ public final class JoinListener implements Listener {
         if (!pending.isEmpty()) {
             messages.send(player, "notify.offline-header", Map.of("count", String.valueOf(pending.size())));
             for (String raw : pending) {
-                player.sendMessage(messages.componentFromText(raw, Map.of()));
+                messages.sendRaw(player, raw, Map.of());
             }
         }
         sendStaffSummary(player);

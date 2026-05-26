@@ -1,56 +1,48 @@
 # MalinaTicket
 
-MalinaTicket - простой тикет-плагин для Paper/Purpur `1.21.11` с API `26.1.2`. Он закрывает обычный сценарий небольшого сервера: игрок оставляет обращение через GUI, персонал отвечает, назначает ответственного и закрывает тикет с причиной.
+MalinaTicket - тикет-плагин для Paper/Purpur. Игрок оставляет обращение через GUI, персонал отвечает, назначает ответственного и закрывает тикет с причиной.
 
 Автор: `MEvgeniy`
 
 ## Совместимость
 
-- Minecraft/Paper/Purpur: `1.21.11`
-- Paper API: `26.1.2`
-- Java: `25`
-- База данных не нужна: тикеты лежат в YAML-файлах внутри папки плагина.
+- Paper/Purpur: `1.16.5-26.1.2`
+- Java для JAR: `16+`
+- Для новых серверов используй Java, которую требует само ядро. Например, Paper/Purpur `26.1+` требует Java `25`.
+- Spigot и Folia не заявлены как совместимые.
 
-Поддержка заявлена для Paper/Purpur `1.21.11`. Новые версии Paper/Purpur могут работать, если сохраняют совместимость с API `26.1.2`, но без отдельной проверки это не обещается. Плагин не заявляет совместимость со Spigot, Folia и старыми ветками Paper.
+Плагин собирается как универсальный JAR: байткод Java 16, Paper API 1.16.5 как базовый API сборки и встроенный Adventure для MiniMessage/кликабельных сообщений.
 
-## Сборка и релиз
+## Сборка
 
 ```powershell
 .\gradlew.bat clean test
-.\gradlew.bat clean build
+.\gradlew.bat clean shadowJar
 ```
 
-Для публичного релиза лучше собирать с указанием commit hash, чтобы поле `Built-From-Revision` в manifest указывало на конкретный исходный код:
+Для публичного релиза можно указать хэш коммита:
 
 ```powershell
-$env:GIT_COMMIT = "<commit hash>"
+$env:GIT_COMMIT = "<хэш коммита>"
 .\gradlew.bat clean build
 ```
-
-Если `GIT_COMMIT` не задан, в JAR остается значение `local`.
 
 Готовые файлы:
 
-- `build/libs/MalinaTicket-26.5.8.jar`
-- `build/libs/MalinaTicket-26.5.8.jar.sha256`
-
-Перед публикацией полезно проверить содержимое:
-
-```powershell
-jar tf build/libs/MalinaTicket-26.5.8.jar
-```
+- `build/libs/MalinaTicket-26.5.9.jar`
+- `build/libs/MalinaTicket-26.5.9.jar.sha256`
 
 ## Установка
 
 1. Останови сервер.
-2. Скопируй `MalinaTicket-26.5.8.jar` в `plugins`.
-3. Запусти Paper/Purpur `1.21.11` с API `26.1.2`.
+2. Скопируй `MalinaTicket-26.5.9.jar` в `plugins`.
+3. Запусти Paper/Purpur.
 4. Проверь файлы в `plugins/MalinaTicket`: `config.yml`, `messages.yml`, `gui.yml`, `categories.yml`, `permissions.yml`.
 5. Выдай персоналу `malinaticket.staff` или `malinaticket.admin`.
 
-Тикеты хранятся в `plugins/MalinaTicket/tickets/<ник>.yml`. Файл `_meta.yml` хранит следующий ID и список игроков, которым временно запрещено создавать тикеты. Последние `.bak` копии сохраняются в `plugins/MalinaTicket/tickets/backups`, но перед обновлениями всё равно лучше копировать всю папку `tickets`.
+Тикеты хранятся в `plugins/MalinaTicket/tickets/<ник>.yml`. Последние `.bak` копии сохраняются в `plugins/MalinaTicket/tickets/backups`.
 
-## Основные команды
+## Команды
 
 - `/ticket` - открыть меню игрока.
 - `/ticket create` - создать тикет через GUI.
@@ -68,64 +60,17 @@ jar tf build/libs/MalinaTicket-26.5.8.jar
 
 ## Права
 
-Для обычных игроков основные права по умолчанию доступны всем. Для персонала обычно достаточно выдать `malinaticket.staff`, для полного управления - `malinaticket.admin`.
+Обычно игрокам достаточно прав по умолчанию, персоналу - `malinaticket.staff`, полному администратору - `malinaticket.admin`.
 
-### Готовые наборы
+Базовые права игрока:
 
-| Право | По умолчанию | За что отвечает |
-| --- | --- | --- |
-| `malinaticket.staff` | op | Базовый набор прав персонала: просмотр тикетов, ответы, назначение, закрытие, переоткрытие, телепорт и уведомления. |
-| `malinaticket.admin` | op | Полный доступ к MalinaTicket, включая удаление, статистику, reload, ban/unban и обход лимитов. |
+- `malinaticket.use`
+- `malinaticket.create`
+- `malinaticket.view.own`
+- `malinaticket.comment.own`
+- `malinaticket.close.own`
 
-### Игроки
-
-| Право | По умолчанию | За что отвечает |
-| --- | --- | --- |
-| `malinaticket.use` | everyone | Открытие меню тикетов. |
-| `malinaticket.create` | everyone | Создание тикетов. |
-| `malinaticket.view.own` | everyone | Просмотр своих тикетов. |
-| `malinaticket.comment.own` | everyone | Ответы в своих тикетах. |
-| `malinaticket.close.own` | everyone | Закрытие своих тикетов. |
-
-### Персонал
-
-| Право | По умолчанию | За что отвечает |
-| --- | --- | --- |
-| `malinaticket.staff.gui` | op | Открытие меню персонала. |
-| `malinaticket.view.all` | op | Просмотр всех открытых тикетов. |
-| `malinaticket.view.closed` | op | Просмотр закрытых тикетов. |
-| `malinaticket.view.deleted` | op | Просмотр мягко удаленных тикетов. |
-| `malinaticket.comment.staff` | op | Ответы персонала в тикетах. |
-| `malinaticket.assign` | op | Назначение ответственного. |
-| `malinaticket.close` | op | Закрытие чужих тикетов. |
-| `malinaticket.reopen` | op | Переоткрытие тикетов. |
-| `malinaticket.delete` | op | Мягкое удаление тикетов. |
-| `malinaticket.purge` | op | Окончательное удаление тикетов. |
-| `malinaticket.teleport` | op | Телепорт к месту создания тикета. |
-| `malinaticket.stats` | op | Просмотр статистики. |
-| `malinaticket.reload` | op | Перезагрузка конфигов плагина. |
-| `malinaticket.ban` | op | Запрет игроку создавать тикеты. |
-| `malinaticket.unban` | op | Снятие запрета на создание тикетов. |
-
-### Уведомления
-
-| Право | По умолчанию | За что отвечает |
-| --- | --- | --- |
-| `malinaticket.notify.create` | op | Уведомления персоналу о новых тикетах. |
-| `malinaticket.notify.comment` | op | Уведомления о новых комментариях. |
-| `malinaticket.notify.close` | op | Уведомления о закрытии тикетов. |
-| `malinaticket.notify.join` | op | Сводка по тикетам при входе персонала. |
-
-### Обходы
-
-| Право | По умолчанию | За что отвечает |
-| --- | --- | --- |
-| `malinaticket.bypass.cooldown` | op | Обход задержки создания тикета. |
-| `malinaticket.bypass.limit` | op | Обход лимита открытых тикетов. |
-
-### Категории
-
-Права категорий создаются по шаблону `malinaticket.category.<id>.create`. В стандартной конфигурации есть:
+Категории используют шаблон `malinaticket.category.<id>.create`. Стандартные категории:
 
 - `malinaticket.category.bug.create`
 - `malinaticket.category.player_report.create`
@@ -135,30 +80,43 @@ jar tf build/libs/MalinaTicket-26.5.8.jar
 - `malinaticket.category.question.create`
 - `malinaticket.category.other.create`
 
+Основные права персонала:
+
+- `malinaticket.staff.gui`
+- `malinaticket.view.all`
+- `malinaticket.view.closed`
+- `malinaticket.view.deleted`
+- `malinaticket.comment.staff`
+- `malinaticket.assign`
+- `malinaticket.close`
+- `malinaticket.reopen`
+- `malinaticket.delete`
+- `malinaticket.purge`
+- `malinaticket.teleport`
+- `malinaticket.stats`
+- `malinaticket.reload`
+- `malinaticket.ban`
+- `malinaticket.unban`
+- `malinaticket.bypass.cooldown`
+- `malinaticket.bypass.limit`
+- `malinaticket.notify.create`
+- `malinaticket.notify.comment`
+- `malinaticket.notify.close`
+- `malinaticket.notify.join`
+
+Групповые права:
+
+- `malinaticket.staff`
+- `malinaticket.admin`
+
 ## Настройка
 
-Категории меняются в `categories.yml`. Для каждой категории можно задать материал, слот, цвет, описание и отдельное право доступа. GUI-предметы в `gui.yml` поддерживают `material`, `name`, `lore`, `slot`, `amount`, `glow` и `custom-model-data`. Причины закрытия тикетов тоже настраиваются в `gui.yml`. Сообщения и GUI-тексты используют MiniMessage-формат, поэтому после правок стоит проверить русские символы и кликабельные подсказки прямо в игре.
+Категории меняются в `categories.yml`. GUI-предметы в `gui.yml` поддерживают `material`, `name`, `lore`, `slot`, `amount`, `glow` и `custom-model-data`. Сообщения используют MiniMessage; на старых серверах текст конвертируется через встроенный Adventure/Bukkit platform.
 
-Пример ограничения для обычных игроков:
+## Проверка перед публикацией
 
-```yaml
-settings:
-  cooldown-seconds: 60
-  max-open-tickets: 3
-  max-message-length: 500
-```
-
-## Известные ограничения
-
-- Хранилище файловое, поэтому это не лучший вариант для сети серверов с общими тикетами.
-- `/ticket assign` назначает только игрока онлайн.
-- В закрытый тикет нельзя писать новые сообщения: его нужно сначала переоткрыть.
-- Переименование игрока учитывается при входе, но старый файл может оставаться до следующего сохранения его тикетов.
-- Проверка релиза на реальном сервере обязательна: часть поведения зависит от Paper runtime, а не только от unit-тестов.
-
-## Troubleshooting
-
-- Если меню открывается, но клики не работают, проверь права и ошибки в консоли.
-- Если русские сообщения выглядят сломанными, сохрани YAML-файлы в UTF-8.
-- Если тикеты пропали после ручной правки YAML, верни резервную копию `plugins/MalinaTicket/tickets`.
-- Если сервер отказывается грузить JAR, проверь версию Java и Paper/Purpur.
+- `.\gradlew.bat clean test`
+- `.\gradlew.bat clean shadowJar`
+- проверить `major version 60` у классов JAR;
+- проверить запуск на Paper/Purpur `1.16.5`, `1.17.1`, `1.18.2`, `1.19.4`, `1.20.4`, `1.20.6`, `1.21.1`, `1.21.11`, `26.1.2`;
+- вручную проверить `/ticket`, создание, комментарии, закрытие, кликабельные сообщения и резервные копии в `tickets/backups`.

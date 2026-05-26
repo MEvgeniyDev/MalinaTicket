@@ -3,9 +3,7 @@ package ru.mevgeniy.malinaticket.gui;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -94,7 +92,7 @@ public final class GuiService {
 
     public void playClick(Player player) {
         if (settings.guiClickSound()) {
-            player.playSound(player.getLocation(), settings.clickSound(), SoundCategory.MASTER, 0.35F, 1.25F);
+            player.playSound(player.getLocation(), settings.clickSound(), 0.35F, 1.25F);
         }
     }
 
@@ -106,7 +104,7 @@ public final class GuiService {
             case "close_reasons" -> 27;
             default -> 27;
         });
-        Component title = messages.componentFromText(guiConfig.title(menuName, "<#D94F70>MalinaTicket"), placeholders);
+        String title = messages.legacyFromText(guiConfig.title(menuName, "<#D94F70>MalinaTicket"), placeholders);
         Inventory inventory = Bukkit.createInventory(holder, size, title);
         holder.inventory(inventory);
         return inventory;

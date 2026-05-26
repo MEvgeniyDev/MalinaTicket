@@ -2,7 +2,7 @@ package ru.mevgeniy.malinaticket.gui;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import ru.mevgeniy.malinaticket.compat.TextAdapter;
 import ru.mevgeniy.malinaticket.config.PluginSettings;
 import ru.mevgeniy.malinaticket.model.Ticket;
 import ru.mevgeniy.malinaticket.model.TicketMessage;
@@ -144,6 +144,6 @@ final class GuiTextFormatter {
         if (input == null) {
             return "";
         }
-        return MiniMessage.miniMessage().escapeTags(input);
+        return TextAdapter.escapeTags(input);
     }
 }

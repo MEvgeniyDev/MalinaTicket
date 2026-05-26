@@ -52,7 +52,14 @@ public final class MalinaTicketPlugin extends JavaPlugin {
             pluginCommand.setTabCompleter(command);
         }
 
-        getLogger().info("MalinaTicket 26.5.8 включен. Хранилище: plugins/MalinaTicket/tickets/<ник>.yml");
+        getLogger().info("MalinaTicket 26.5.9 включен. Хранилище: plugins/MalinaTicket/tickets/<ник>.yml");
+    }
+
+    @Override
+    public void onDisable() {
+        if (messages != null) {
+            messages.close();
+        }
     }
 
     private void saveResourceIfMissing(String resourceName) {

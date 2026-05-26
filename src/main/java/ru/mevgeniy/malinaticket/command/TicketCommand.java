@@ -290,13 +290,13 @@ public final class TicketCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender, String label) {
         String prefix = "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>";
-        sender.sendMessage(messages.componentFromText(prefix + "/" + label + " <#F4A6B8>- открыть меню", Map.of()));
-        sender.sendMessage(messages.componentFromText(prefix + "/" + label + " create <#F4A6B8>- создать тикет", Map.of()));
-        sender.sendMessage(messages.componentFromText(prefix + "/" + label + " view <id> <#F4A6B8>- открыть тикет", Map.of()));
-        sender.sendMessage(messages.componentFromText(prefix + "/" + label + " comment <id> <текст> <#F4A6B8>- ответить", Map.of()));
-        sender.sendMessage(messages.componentFromText(prefix + "/" + label + " close <id> [причина] <#F4A6B8>- закрыть", Map.of()));
-        sender.sendMessage(messages.componentFromText(prefix + "/" + label + " staff <#F4A6B8>- меню персонала", Map.of()));
-        sender.sendMessage(messages.componentFromText(prefix + "/" + label + " cancel <#F4A6B8>- отменить ввод через чат", Map.of()));
+        messages.sendRaw(sender, prefix + "/" + label + " <#F4A6B8>- открыть меню", Map.of());
+        messages.sendRaw(sender, prefix + "/" + label + " create <#F4A6B8>- создать тикет", Map.of());
+        messages.sendRaw(sender, prefix + "/" + label + " view <id> <#F4A6B8>- открыть тикет", Map.of());
+        messages.sendRaw(sender, prefix + "/" + label + " comment <id> <текст> <#F4A6B8>- ответить", Map.of());
+        messages.sendRaw(sender, prefix + "/" + label + " close <id> [причина] <#F4A6B8>- закрыть", Map.of());
+        messages.sendRaw(sender, prefix + "/" + label + " staff <#F4A6B8>- меню персонала", Map.of());
+        messages.sendRaw(sender, prefix + "/" + label + " cancel <#F4A6B8>- отменить ввод через чат", Map.of());
     }
 
     private String join(String[] args, int start) {

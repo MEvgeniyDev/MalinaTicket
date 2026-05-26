@@ -3,7 +3,6 @@ package ru.mevgeniy.malinaticket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -318,6 +317,6 @@ public final class TicketService {
         if (input == null) {
             return "";
         }
-        return MiniMessage.miniMessage().escapeTags(input);
+        return messages.escapeTags(input);
     }
 }

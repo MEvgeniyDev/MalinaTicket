@@ -1,11 +1,9 @@
 package ru.mevgeniy.malinaticket.config;
 
-import java.util.Locale;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import ru.mevgeniy.malinaticket.compat.SoundAdapter;
 
 public final class PluginSettings {
     private final JavaPlugin plugin;
@@ -31,7 +29,7 @@ public final class PluginSettings {
         maxMessageLength = config.getInt("settings.max-message-length", 500);
         ticketsPerPage = Math.max(1, Math.min(45, config.getInt("settings.tickets-per-page", 45)));
         guiClickSound = config.getBoolean("settings.gui-click-sound.enabled", true);
-        clickSound = parseSound(config.getString("settings.gui-click-sound.sound", "UI_BUTTON_CLICK"));
+        clickSound = SoundAdapter.parse(config.getString("settings.gui-click-sound.sound", "UI_BUTTON_CLICK"));
         dateFormat = config.getString("settings.date-format", "dd.MM.yyyy HH:mm");
         timeZone = config.getString("settings.time-zone", "Europe/Moscow");
         captureChatInputs = config.getBoolean("settings.capture-chat-inputs", true);
@@ -71,25 +69,5 @@ public final class PluginSettings {
 
     public boolean captureChatInputs() {
         return captureChatInputs;
-    }
-
-    private Sound parseSound(String soundName) {
-        if (soundName == null || soundName.isBlank()) {
-            return Sound.UI_BUTTON_CLICK;
-        }
-        NamespacedKey key = soundKey(soundName);
-        Sound sound = key == null ? null : Registry.SOUND_EVENT.get(key);
-        return sound == null ? Sound.UI_BUTTON_CLICK : sound;
-    }
-
-    private NamespacedKey soundKey(String soundName) {
-        String normalized = soundName.trim().toLowerCase(Locale.ROOT);
-        if (normalized.contains(":")) {
-            return NamespacedKey.fromString(normalized);
-        }
-        if (!normalized.contains(".")) {
-            normalized = normalized.replace('_', '.');
-        }
-        return NamespacedKey.minecraft(normalized);
     }
 }

@@ -4,7 +4,7 @@ main: ru.mevgeniy.malinaticket.MalinaTicketPlugin
 description: Система тикетов и репортов для игроков и персонала.
 author: MEvgeniy
 website: https://github.com/MEvgeniyDev/MalinaTicket
-api-version: '26.1.2'
+api-version: '1.16'
 prefix: MalinaTicket
 load: POSTWORLD
 

@@ -1,33 +1,44 @@
 import java.security.MessageDigest
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.jvm.tasks.Jar
 
 plugins {
     java
+    id("com.gradleup.shadow") version "9.4.1"
 }
 
 group = "ru.mevgeniy"
-version = "26.5.8"
+version = "26.5.9"
 
 val pluginVersion = version.toString()
 val buildRevision = providers.environmentVariable("GIT_COMMIT").orElse("local")
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.1.2.build.65-stable")
+    compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
 
-    testImplementation("io.papermc.paper:paper-api:26.1.2.build.65-stable")
-    testImplementation(platform("org.junit:junit-bom:6.0.0"))
+    implementation("net.kyori:adventure-platform-bukkit:4.4.1")
+    implementation("net.kyori:adventure-text-minimessage:4.25.0")
+    implementation("net.kyori:adventure-text-serializer-legacy:4.25.0")
+
+    testImplementation("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+    testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 }
 
 tasks {
     compileJava {
         options.encoding = "UTF-8"
-        options.release.set(25)
+        options.release.set(16)
+    }
+
+    compileTestJava {
+        options.encoding = "UTF-8"
+        options.release.set(16)
     }
 
     processResources {
@@ -53,13 +64,34 @@ tasks {
             )
         }
     }
+
+    named<ShadowJar>("shadowJar") {
+        archiveBaseName.set("MalinaTicket")
+        archiveVersion.set(pluginVersion)
+        archiveClassifier.set("")
+        relocate("net.kyori", "ru.mevgeniy.malinaticket.libs.kyori") {
+            skipStringConstants = true
+        }
+        manifest {
+            attributes(
+                "Implementation-Title" to "MalinaTicket",
+                "Implementation-Version" to pluginVersion,
+                "Implementation-Vendor" to "MEvgeniy",
+                "Built-From-Revision" to buildRevision.get()
+            )
+        }
+    }
+
+    build {
+        dependsOn(shadowJar)
+    }
 }
 
 val writeJarChecksum by tasks.registering {
     group = "verification"
     description = "Writes a SHA-256 checksum next to the release JAR."
 
-    val jarTask = tasks.named<Jar>("jar")
+    val jarTask = tasks.named<ShadowJar>("shadowJar")
     dependsOn(jarTask)
 
     val jarFile = jarTask.flatMap { it.archiveFile }

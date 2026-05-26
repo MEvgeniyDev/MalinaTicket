@@ -5,12 +5,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import ru.mevgeniy.malinaticket.compat.ItemAdapter;
 import ru.mevgeniy.malinaticket.config.GuiItemConfig;
 import ru.mevgeniy.malinaticket.config.MessageService;
 
@@ -45,26 +44,18 @@ public final class ItemFactory {
             item = new ItemStack(Material.PAPER, clampAmount(amount));
             meta = item.getItemMeta();
         }
-        meta.displayName(plain(messages.componentFromText(name, placeholders)));
-        List<Component> renderedLore = new ArrayList<>();
+        meta.setDisplayName(messages.legacyFromText(name, placeholders));
+        List<String> renderedLore = new ArrayList<>();
         for (String line : lore) {
             for (String part : splitRenderedLine(line, placeholders)) {
-                renderedLore.add(plain(messages.componentFromText(part, Map.of())));
+                renderedLore.add(messages.legacyFromText(part, Map.of()));
             }
         }
-        meta.lore(renderedLore);
+        meta.setLore(renderedLore);
         if (glow) {
-            meta.setEnchantmentGlintOverride(true);
+            ItemAdapter.applyGlow(meta);
         }
-        if (customModelData != null) {
-            if (customModelData >= 0) {
-                var customModelDataComponent = meta.getCustomModelDataComponent();
-                customModelDataComponent.setFloats(List.of(customModelData.floatValue()));
-                meta.setCustomModelDataComponent(customModelDataComponent);
-            } else {
-                logger.warning("custom-model-data не может быть меньше 0: " + customModelData);
-            }
-        }
+        ItemAdapter.applyCustomModelData(meta, customModelData, logger);
         meta.addItemFlags(ItemFlag.values());
         item.setItemMeta(meta);
         return item;
@@ -84,10 +75,6 @@ public final class ItemFactory {
             return fallback;
         }
         return material;
-    }
-
-    private Component plain(Component component) {
-        return component.decoration(TextDecoration.ITALIC, false);
     }
 
     private List<String> splitRenderedLine(String line, Map<String, String> placeholders) {

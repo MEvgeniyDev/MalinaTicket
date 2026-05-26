@@ -3,23 +3,22 @@ package ru.mevgeniy.malinaticket.config;
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
-import java.util.logging.Level;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import ru.mevgeniy.malinaticket.compat.TextAdapter;
 
 public final class MessageService {
     private static final String MISSING_PREFIX = "<#E05A47>Сообщение не найдено: ";
 
     private final JavaPlugin plugin;
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private final TextAdapter textAdapter;
     private FileConfiguration config;
 
     public MessageService(JavaPlugin plugin) {
         this.plugin = plugin;
+        this.textAdapter = new TextAdapter(plugin);
     }
 
     public void reload() {
@@ -35,38 +34,38 @@ public final class MessageService {
     }
 
     public void send(CommandSender sender, String path, Map<String, String> placeholders) {
-        sender.sendMessage(component(path, placeholders));
+        textAdapter.send(sender, raw(path), placeholders);
     }
 
-    public Component component(String path, Map<String, String> placeholders) {
-        String raw = config == null ? MISSING_PREFIX + path : config.getString(path, MISSING_PREFIX + path);
-        return componentFromText(raw, placeholders);
+    public void sendRaw(CommandSender sender, String raw, Map<String, String> placeholders) {
+        textAdapter.send(sender, raw, placeholders);
     }
 
     public String text(String path, Map<String, String> placeholders) {
-        String raw = config == null ? MISSING_PREFIX + path : config.getString(path, MISSING_PREFIX + path);
-        return apply(raw, placeholders);
+        return apply(raw(path), placeholders);
     }
 
-    public Component componentFromText(String raw, Map<String, String> placeholders) {
-        String rendered = apply(raw, placeholders);
-        try {
-            return miniMessage.deserialize(rendered);
-        } catch (RuntimeException exception) {
-            plugin.getLogger().log(Level.WARNING, "Ошибка MiniMessage в тексте: " + rendered, exception);
-            return Component.text(rendered);
-        }
+    public String legacyFromText(String raw, Map<String, String> placeholders) {
+        return textAdapter.legacy(raw, placeholders);
     }
 
     public String applyPlaceholders(String raw, Map<String, String> placeholders) {
         return apply(raw, placeholders);
     }
 
+    public String escapeTags(String input) {
+        return TextAdapter.escapeTags(input);
+    }
+
+    public void close() {
+        textAdapter.close();
+    }
+
+    private String raw(String path) {
+        return config == null ? MISSING_PREFIX + path : config.getString(path, MISSING_PREFIX + path);
+    }
+
     private String apply(String raw, Map<String, String> placeholders) {
-        String result = raw == null ? "" : raw;
-        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
-            result = result.replace("%" + entry.getKey() + "%", entry.getValue());
-        }
-        return result;
+        return TextAdapter.apply(raw, placeholders);
     }
 }
