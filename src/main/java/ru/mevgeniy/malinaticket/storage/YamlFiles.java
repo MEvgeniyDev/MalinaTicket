@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.logging.Level;
@@ -21,6 +22,10 @@ final class YamlFiles {
     }
 
     YamlConfiguration load(File file, String description) {
+        if (!Files.isRegularFile(file.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+            logger.warning("Ожидался обычный YAML-файл: " + file.getPath());
+            return null;
+        }
         YamlConfiguration config = new YamlConfiguration();
         try {
             config.load(file);
@@ -32,25 +37,41 @@ final class YamlFiles {
     }
 
     boolean saveSafely(YamlConfiguration config, File target, String description) {
-        File parent = target.getParentFile();
-        if (parent != null) {
-            parent.mkdirs();
-        }
-        File temp = new File(parent, target.getName() + ".tmp");
+        Path temp = null;
+        Path backupTemp = null;
         try {
-            config.save(temp);
-            if (target.exists()) {
-                backupDirectory.mkdirs();
-                Files.copy(target.toPath(), backupPath(target), StandardCopyOption.REPLACE_EXISTING);
+            Path path = target.toPath();
+            Files.createDirectories(path.getParent());
+            temp = Files.createTempFile(path.getParent(), target.getName(), ".tmp");
+            config.save(temp.toFile());
+            if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
+                if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+                    throw new IOException("Ожидался обычный YAML-файл: " + target);
+                }
+                Path backups = backupDirectory.toPath();
+                Files.createDirectories(backups);
+                backupTemp = Files.createTempFile(backups, target.getName(), ".tmp");
+                Files.copy(path, backupTemp, StandardCopyOption.REPLACE_EXISTING);
+                moveReplacing(backupTemp, backupPath(target));
             }
-            moveReplacing(temp.toPath(), target.toPath());
+            moveReplacing(temp, path);
             return true;
         } catch (IOException exception) {
             logger.log(Level.SEVERE, "Не удалось сохранить " + description, exception);
-            if (temp.exists() && !temp.delete()) {
-                logger.warning("Не удалось удалить временный файл: " + temp.getPath());
-            }
             return false;
+        } finally {
+            removeTemporaryFile(temp);
+            removeTemporaryFile(backupTemp);
+        }
+    }
+
+    private void removeTemporaryFile(Path temp) {
+        if (temp != null) {
+            try {
+                Files.deleteIfExists(temp);
+            } catch (IOException exception) {
+                logger.warning("Не удалось удалить временный файл: " + temp);
+            }
         }
     }
 

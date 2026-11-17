@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -196,20 +195,7 @@ public final class TicketCommand implements CommandExecutor, TabCompleter {
         if (ticket == null) {
             return;
         }
-        if (!ticketService.canView(player, ticket)) {
-            messages.send(player, "errors.no-permission");
-            return;
-        }
-        if (ticket.location() == null) {
-            return;
-        }
-        Location location = ticket.location().toBukkitLocation();
-        if (location == null) {
-            messages.send(player, "errors.world-not-found");
-            return;
-        }
-        player.teleport(location);
-        messages.send(player, "ticket.teleported", ticketService.placeholders(ticket));
+        ticketService.teleport(player, ticket);
     }
 
     private void banPlayerFromTicketCreation(CommandSender sender, String[] args) {
@@ -232,7 +218,10 @@ public final class TicketCommand implements CommandExecutor, TabCompleter {
             return;
         }
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(args[1]);
-        storage.setCreationBan(offlinePlayer.getUniqueId(), banned);
+        if (!storage.setCreationBan(offlinePlayer.getUniqueId(), banned)) {
+            messages.send(sender, "errors.storage-write");
+            return;
+        }
         messages.send(sender, banned ? "ticket.creation-ban-added" : "ticket.creation-ban-removed", Map.of("player", offlinePlayer.getName() == null ? args[1] : offlinePlayer.getName()));
     }
 

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -38,7 +39,7 @@ public final class CategoryRegistry {
 
         for (String id : section.getKeys(false)) {
             TicketCategory category = categoryFromConfig(config, id);
-            byId.put(id.toLowerCase(), category);
+            byId.put(id.toLowerCase(Locale.ROOT), category);
             ordered.add(category);
         }
         ordered.sort(Comparator.comparingInt(TicketCategory::slot).thenComparing(TicketCategory::id));
@@ -56,7 +57,7 @@ public final class CategoryRegistry {
         if (id == null) {
             return first();
         }
-        return byId.getOrDefault(id.toLowerCase(), first());
+        return byId.get(id.toLowerCase(Locale.ROOT));
     }
 
     public boolean canCreate(Player player, TicketCategory category) {
@@ -66,12 +67,16 @@ public final class CategoryRegistry {
     static TicketCategory categoryFromConfig(FileConfiguration config, String id) {
         String base = "categories." + id + ".";
         Integer customModelData = config.isInt(base + "custom-model-data") ? config.getInt(base + "custom-model-data") : null;
+        String color = config.getString(base + "color", "#D94F70");
+        if (color.startsWith("{#") && color.endsWith("}")) {
+            color = color.substring(1, color.length() - 1);
+        }
         return new TicketCategory(
                 id,
                 config.getString(base + "name", id),
                 config.getString(base + "material", "PAPER"),
                 config.getInt(base + "slot", 10),
-                config.getString(base + "color", "#D94F70"),
+                color,
                 config.getString(base + "permission", "malinaticket.category." + id + ".create"),
                 config.getStringList(base + "description"),
                 safeAmount(config.getInt(base + "amount", 1)),

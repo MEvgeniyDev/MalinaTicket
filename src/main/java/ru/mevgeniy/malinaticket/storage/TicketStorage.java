@@ -1,7 +1,11 @@
 package ru.mevgeniy.malinaticket.storage;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
+import java.util.function.Consumer;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -29,9 +34,11 @@ public final class TicketStorage {
     private final File metaFile;
     private final Map<Integer, Ticket> ticketsById = new HashMap<>();
     private final Map<UUID, String> ownerFileNames = new HashMap<>();
+    private final Map<UUID, String> ownerNames = new HashMap<>();
     private final Map<UUID, List<String>> pendingNotifications = new HashMap<>();
     private final Set<UUID> creationBans = new HashSet<>();
     private int nextId = 1;
+    private boolean metaReadable;
 
     public TicketStorage(JavaPlugin plugin) {
         this(plugin.getDataFolder(), plugin.getLogger());
@@ -49,6 +56,7 @@ public final class TicketStorage {
         ticketsDirectory.mkdirs();
         ticketsById.clear();
         ownerFileNames.clear();
+        ownerNames.clear();
         pendingNotifications.clear();
         creationBans.clear();
         nextId = 1;
@@ -59,20 +67,25 @@ public final class TicketStorage {
         if (files == null) {
             return;
         }
+        Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed().thenComparing(File::getName));
         for (File file : files) {
             loadPlayerFile(file);
         }
         int highestId = ticketsById.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
         if (nextId <= highestId) {
-            nextId = highestId + 1;
+            nextId = highestId == Integer.MAX_VALUE ? Integer.MAX_VALUE : highestId + 1;
             saveMeta();
         }
     }
 
     public synchronized Ticket createTicket(UUID ownerUuid, String ownerName, Location location, String categoryId, int priority, String text) {
+        if (nextId == Integer.MAX_VALUE) {
+            logger.warning("Достигнут максимальный ID тикета.");
+            return null;
+        }
         long now = System.currentTimeMillis();
         Ticket ticket = new Ticket(
-                nextId++,
+                nextId,
                 ownerUuid,
                 ownerName,
                 TicketStatus.OPEN,
@@ -84,8 +97,11 @@ public final class TicketStorage {
                 List.of(new TicketMessage(ownerUuid, ownerName, false, now, text))
         );
         ticketsById.put(ticket.id(), ticket);
-        ownerFileNames.put(ownerUuid, fileName(ownerName));
-        saveTicket(ticket);
+        if (!saveOwnerFile(ownerUuid, ownerName)) {
+            ticketsById.remove(ticket.id());
+            return null;
+        }
+        nextId++;
         saveMeta();
         return ticket;
     }
@@ -131,22 +147,42 @@ public final class TicketStorage {
                 .count();
     }
 
-    public synchronized void saveTicket(Ticket ticket) {
-        saveOwnerFile(ticket.ownerUuid());
-    }
-
-    public synchronized void purge(Ticket ticket) {
-        ticketsById.remove(ticket.id());
-        saveOwnerFile(ticket.ownerUuid());
-    }
-
-    public synchronized void setCreationBan(UUID uuid, boolean banned) {
-        if (banned) {
-            creationBans.add(uuid);
-        } else {
-            creationBans.remove(uuid);
+    public synchronized Ticket updateTicket(Ticket ticket, Consumer<Ticket> change) {
+        if (ticketsById.get(ticket.id()) != ticket) {
+            return null;
         }
-        saveMeta();
+        Ticket updated = ticket.copy();
+        change.accept(updated);
+        ticketsById.put(updated.id(), updated);
+        if (!saveOwnerFile(updated.ownerUuid(), updated.ownerName())) {
+            ticketsById.put(ticket.id(), ticket);
+            return null;
+        }
+        return updated;
+    }
+
+    public synchronized boolean purge(Ticket ticket) {
+        if (!ticketsById.remove(ticket.id(), ticket)) {
+            return false;
+        }
+        if (saveOwnerFile(ticket.ownerUuid(), ticket.ownerName())) {
+            return true;
+        }
+        ticketsById.put(ticket.id(), ticket);
+        return false;
+    }
+
+    public synchronized boolean setCreationBan(UUID uuid, boolean banned) {
+        boolean changed = banned ? creationBans.add(uuid) : creationBans.remove(uuid);
+        if (!changed || saveMeta()) {
+            return true;
+        }
+        if (banned) {
+            creationBans.remove(uuid);
+        } else {
+            creationBans.add(uuid);
+        }
+        return false;
     }
 
     public synchronized boolean isCreationBanned(UUID uuid) {
@@ -154,33 +190,45 @@ public final class TicketStorage {
     }
 
     public synchronized void addPendingNotification(UUID uuid, String text) {
-        pendingNotifications.computeIfAbsent(uuid, ignored -> new ArrayList<>()).add(text);
-        saveOwnerFile(uuid);
+        List<String> pending = pendingNotifications.computeIfAbsent(uuid, ignored -> new ArrayList<>());
+        pending.add(text);
+        if (!saveOwnerFile(uuid, ownerName(uuid))) {
+            pending.remove(pending.size() - 1);
+            logger.warning("Уведомление для игрока " + uuid + " не сохранено.");
+        }
     }
 
     public synchronized List<String> drainPendingNotifications(UUID uuid) {
-        List<String> result = new ArrayList<>(pendingNotifications.getOrDefault(uuid, List.of()));
-        pendingNotifications.remove(uuid);
-        saveOwnerFile(uuid);
+        List<String> result = pendingNotifications.remove(uuid);
+        if (result == null || result.isEmpty()) {
+            return List.of();
+        }
+        if (!saveOwnerFile(uuid, ownerName(uuid))) {
+            pendingNotifications.put(uuid, result);
+            return List.of();
+        }
         return result;
     }
 
     public synchronized void refreshOwnerName(UUID uuid, String newName) {
-        boolean changed = false;
-        for (Ticket ticket : ticketsById.values()) {
-            if (ticket.ownerUuid().equals(uuid) && !ticket.ownerName().equals(newName)) {
-                ticket.ownerName(newName);
-                changed = true;
-            }
+        if (!ownerFileNames.containsKey(uuid) || newName.equals(ownerNames.get(uuid))) {
+            return;
         }
-        if (changed || ownerFileNames.containsKey(uuid)) {
-            ownerFileNames.put(uuid, fileName(newName));
-            saveOwnerFile(uuid);
+        List<Ticket> renamed = ticketsById.values().stream()
+                .filter(ticket -> ticket.isOwner(uuid) && !newName.equals(ticket.ownerName())).toList();
+        for (Ticket previous : renamed) {
+            Ticket updated = previous.copy();
+            updated.ownerName(newName);
+            ticketsById.put(updated.id(), updated);
+        }
+        if (!saveOwnerFile(uuid, newName)) {
+            renamed.forEach(ticket -> ticketsById.put(ticket.id(), ticket));
         }
     }
 
     private void loadMeta() {
-        if (!metaFile.exists()) {
+        metaReadable = !Files.exists(metaFile.toPath(), LinkOption.NOFOLLOW_LINKS);
+        if (metaReadable) {
             saveMeta();
             return;
         }
@@ -188,7 +236,8 @@ public final class TicketStorage {
         if (config == null) {
             return;
         }
-        nextId = config.getInt("next-id", 1);
+        metaReadable = true;
+        nextId = Math.max(1, config.getInt("next-id", 1));
         for (String rawUuid : config.getStringList("creation-bans")) {
             UUID uuid = parseUuid(rawUuid);
             if (uuid != null) {
@@ -197,11 +246,14 @@ public final class TicketStorage {
         }
     }
 
-    private void saveMeta() {
+    private boolean saveMeta() {
+        if (!metaReadable) {
+            return false;
+        }
         YamlConfiguration config = new YamlConfiguration();
         config.set("next-id", nextId);
         config.set("creation-bans", creationBans.stream().map(UUID::toString).sorted().toList());
-        yamlFiles.saveSafely(config, metaFile, "tickets/_meta.yml");
+        return yamlFiles.saveSafely(config, metaFile, "tickets/_meta.yml");
     }
 
     private void loadPlayerFile(File file) {
@@ -211,15 +263,26 @@ public final class TicketStorage {
         }
         UUID ownerUuid = parseUuid(config.getString("uuid"));
         String ownerName = config.getString("name", file.getName().replace(".yml", ""));
+        ConfigurationSection ticketsSection = config.getConfigurationSection("tickets");
         if (ownerUuid != null) {
-            ownerFileNames.put(ownerUuid, file.getName());
             List<String> pending = config.getStringList("pending-notifications");
+            String uuid = ownerUuid.toString();
+            if (file.getName().equalsIgnoreCase(uuid + ".yml") && ownerName.equalsIgnoreCase(uuid)
+                    && (ticketsSection == null || ticketsSection.getKeys(false).isEmpty()) && pending.isEmpty()) {
+                return;
+            }
+            String newerFile = ownerFileNames.get(ownerUuid);
+            if (newerFile != null && !newerFile.equals(file.getName())) {
+                logger.warning("Второй файл тикетов игрока " + ownerUuid + " оставлен без изменений: " + file.getName());
+                return;
+            }
+            ownerFileNames.putIfAbsent(ownerUuid, file.getName());
+            ownerNames.putIfAbsent(ownerUuid, ownerName);
             if (!pending.isEmpty()) {
-                pendingNotifications.put(ownerUuid, new ArrayList<>(pending));
+                pendingNotifications.putIfAbsent(ownerUuid, new ArrayList<>(pending));
             }
         }
 
-        ConfigurationSection ticketsSection = config.getConfigurationSection("tickets");
         if (ticketsSection == null) {
             return;
         }
@@ -260,22 +323,34 @@ public final class TicketStorage {
                     config.getLong(base + "deleted-at", 0L)
             );
             ticket.updatedAt(config.getLong(base + "updated-at", ticket.updatedAt()));
-            Ticket previous = ticketsById.put(id, ticket);
+            Ticket previous = ticketsById.putIfAbsent(id, ticket);
             if (previous != null) {
-                logger.warning("Дубликат ID тикета " + id + " в файле " + file.getName() + ". Предыдущая запись была заменена.");
+                logger.warning("Дубликат ID тикета " + id + " в файле " + file.getName() + " пропущен.");
             }
-            ownerFileNames.put(ticket.ownerUuid(), file.getName());
+            ownerFileNames.putIfAbsent(ticket.ownerUuid(), file.getName());
+            ownerNames.putIfAbsent(ticket.ownerUuid(), ticket.ownerName());
         }
     }
 
-    private void saveOwnerFile(UUID ownerUuid) {
+    private String ownerName(UUID uuid) {
+        return ownerNames.getOrDefault(uuid, uuid.toString());
+    }
+
+    private boolean saveOwnerFile(UUID ownerUuid, String ownerName) {
         List<Ticket> ownerTickets = ticketsById.values().stream()
                 .filter(ticket -> ticket.ownerUuid().equals(ownerUuid))
                 .sorted(Comparator.comparingInt(Ticket::id))
                 .toList();
-        String ownerName = ownerTickets.isEmpty() ? ownerFileNames.getOrDefault(ownerUuid, ownerUuid.toString()) : ownerTickets.get(0).ownerName();
         String newFileName = fileName(ownerName);
         File target = new File(ticketsDirectory, newFileName);
+        if (newFileName.equalsIgnoreCase(metaFile.getName()) || !belongsTo(target, ownerUuid, true)) {
+            newFileName = ownerUuid + ".yml";
+            target = new File(ticketsDirectory, newFileName);
+            if (!belongsTo(target, ownerUuid, true)) {
+                logger.warning("Нельзя безопасно записать тикеты игрока " + ownerUuid + ": " + target.getName());
+                return false;
+            }
+        }
         YamlConfiguration config = new YamlConfiguration();
         config.set("uuid", ownerUuid.toString());
         config.set("name", ownerName);
@@ -286,18 +361,40 @@ public final class TicketStorage {
         for (Ticket ticket : ownerTickets) {
             saveTicketToConfig(config, ticket);
         }
-        if (yamlFiles.saveSafely(config, target, "тикеты игрока " + ownerName)) {
-            String oldFileName = ownerFileNames.put(ownerUuid, newFileName);
-            if (oldFileName != null && !oldFileName.equalsIgnoreCase(newFileName)) {
-                File oldFile = new File(ticketsDirectory, oldFileName);
-                if (oldFile.exists() && !oldFile.equals(target)) {
-                    boolean deleted = oldFile.delete();
-                    if (!deleted) {
-                        logger.warning("Не удалось удалить старый файл тикетов: " + oldFile.getPath());
-                    }
+        if (!yamlFiles.saveSafely(config, target, "тикеты игрока " + ownerName)) {
+            return false;
+        }
+        String oldFileName = ownerFileNames.put(ownerUuid, newFileName);
+        ownerNames.put(ownerUuid, ownerName);
+        if (oldFileName != null && !oldFileName.equals(newFileName)) {
+            File oldFile = new File(ticketsDirectory, oldFileName);
+            try {
+                if (belongsTo(oldFile, ownerUuid, false) && !Files.isSameFile(oldFile.toPath(), target.toPath())) {
+                    Files.delete(oldFile.toPath());
                 }
+            } catch (IOException exception) {
+                logger.warning("Не удалось удалить старый файл тикетов: " + oldFile.getPath() + " (" + exception.getMessage() + ")");
             }
         }
+        return true;
+    }
+
+    private boolean belongsTo(File file, UUID uuid, boolean allowMissing) {
+        if (Files.notExists(file.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+            return allowMissing;
+        }
+        if (!Files.isRegularFile(file.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+            return false;
+        }
+        YamlConfiguration existing = yamlFiles.load(file, "файл владельца тикетов");
+        if (existing == null || !uuid.equals(parseUuid(existing.getString("uuid")))) {
+            return false;
+        }
+        ConfigurationSection tickets = existing.getConfigurationSection("tickets");
+        return tickets == null || tickets.getKeys(false).stream().allMatch(id -> {
+            String owner = tickets.getString(id + ".owner-uuid");
+            return owner == null || uuid.equals(parseUuid(owner));
+        });
     }
 
     private void saveTicketToConfig(YamlConfiguration config, Ticket ticket) {
@@ -322,14 +419,14 @@ public final class TicketStorage {
             config.set(base + "assigned-to-uuid", ticket.assignedToUuid().toString());
             config.set(base + "assigned-to-name", ticket.assignedToName());
         }
-        if (ticket.closedByUuid() != null) {
-            config.set(base + "closed-by-uuid", ticket.closedByUuid().toString());
+        if (ticket.closedAt() != 0L) {
+            config.set(base + "closed-by-uuid", ticket.closedByUuid() == null ? null : ticket.closedByUuid().toString());
             config.set(base + "closed-by-name", ticket.closedByName());
             config.set(base + "closed-at", ticket.closedAt());
             config.set(base + "close-reason", ticket.closeReason());
         }
-        if (ticket.deletedByUuid() != null) {
-            config.set(base + "deleted-by-uuid", ticket.deletedByUuid().toString());
+        if (ticket.deletedAt() != 0L) {
+            config.set(base + "deleted-by-uuid", ticket.deletedByUuid() == null ? null : ticket.deletedByUuid().toString());
             config.set(base + "deleted-by-name", ticket.deletedByName());
             config.set(base + "deleted-at", ticket.deletedAt());
         }

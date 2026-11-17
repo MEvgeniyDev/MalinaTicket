@@ -30,7 +30,7 @@ public final class JoinListener implements Listener {
         if (!pending.isEmpty()) {
             messages.send(player, "notify.offline-header", Map.of("count", String.valueOf(pending.size())));
             for (String raw : pending) {
-                messages.sendRaw(player, raw, Map.of());
+                messages.sendPrepared(player, raw);
             }
         }
         sendStaffSummary(player);
@@ -67,7 +67,7 @@ public final class JoinListener implements Listener {
 
         Ticket latest = openTickets.get(0);
         placeholders.put("latest_id", String.valueOf(latest.id()));
-        placeholders.put("latest_player", latest.ownerName());
+        placeholders.put("latest_player", messages.escapeTags(latest.ownerName()));
         messages.send(player, "notify.staff-join-stats", placeholders);
         messages.send(player, "notify.staff-join-extra", placeholders);
         messages.send(player, "notify.staff-join-latest", placeholders);
@@ -75,9 +75,6 @@ public final class JoinListener implements Listener {
     }
 
     private boolean canSeeStaffSummary(Player player) {
-        return player.isOp()
-                || player.hasPermission(PermissionNodes.NOTIFY_JOIN)
-                || player.hasPermission(PermissionNodes.STAFF)
-                || player.hasPermission(PermissionNodes.ADMIN);
+        return player.hasPermission(PermissionNodes.NOTIFY_JOIN);
     }
 }

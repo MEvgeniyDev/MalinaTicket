@@ -44,14 +44,11 @@ public final class ItemFactory {
             item = new ItemStack(Material.PAPER, clampAmount(amount));
             meta = item.getItemMeta();
         }
-        meta.setDisplayName(messages.legacyFromText(name, placeholders));
         List<String> renderedLore = new ArrayList<>();
         for (String line : lore) {
-            for (String part : splitRenderedLine(line, placeholders)) {
-                renderedLore.add(messages.legacyFromText(part, Map.of()));
-            }
+            renderedLore.addAll(splitRenderedLine(line, placeholders));
         }
-        meta.setLore(renderedLore);
+        messages.applyItemText(meta, messages.applyPlaceholders(name, placeholders), renderedLore);
         if (glow) {
             ItemAdapter.applyGlow(meta);
         }

@@ -3,6 +3,7 @@ package ru.mevgeniy.malinaticket.gui;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import ru.mevgeniy.malinaticket.config.GuiItemConfig;
 import ru.mevgeniy.malinaticket.model.TicketCategory;
@@ -29,8 +30,12 @@ final class PlayerTicketMenu {
         gui.placeClickableItem(inventory, holder, gui.guiConfig.item("main.create", 11, "WRITABLE_BOOK", "<#D94F70>Создать тикет", List.of("<#FBE8EE>Новое обращение в поддержку.")), Map.of(), event -> gui.showTicketCreation(player, null, 3));
         gui.placeClickableItem(inventory, holder, gui.guiConfig.item("main.open", 13, "BOOK", "<#F4A6B8>Мои тикеты", List.of("<#FBE8EE>Открытые обращения.")), Map.of(), event -> gui.showPlayerTickets(player, TicketStatus.OPEN, 0));
         gui.placeClickableItem(inventory, holder, gui.guiConfig.item("main.closed", 15, "CHEST", "<#F4A6B8>Закрытые", List.of("<#FBE8EE>История решенных обращений.")), Map.of(), event -> gui.showPlayerTickets(player, TicketStatus.CLOSED, 0));
-        if (player.hasPermission(PermissionNodes.STAFF) || player.hasPermission(PermissionNodes.STAFF_GUI)) {
-            gui.placeClickableItem(inventory, holder, gui.guiConfig.item("main.staff", 31, "AMETHYST_SHARD", "<#F2C14E>Персонал", List.of("<#FBE8EE>Меню обработки тикетов.")), Map.of(), event -> gui.showStaffDashboard(player));
+        if (gui.ticketService.canOpenStaffMenu(player)) {
+            GuiItemConfig staff = gui.guiConfig.item("main.staff", 31, "AMETHYST_SHARD", "<#F2C14E>Персонал", List.of("<#FBE8EE>Меню обработки тикетов."));
+            if (staff.material().equalsIgnoreCase("AMETHYST_SHARD") && Material.matchMaterial("AMETHYST_SHARD") == null) {
+                staff = new GuiItemConfig(staff.slot(), "NAME_TAG", staff.name(), staff.lore(), staff.amount(), staff.glow(), staff.customModelData());
+            }
+            gui.placeClickableItem(inventory, holder, staff, Map.of(), event -> gui.showStaffDashboard(player));
         }
         player.openInventory(inventory);
     }
@@ -44,7 +49,7 @@ final class PlayerTicketMenu {
         TicketCategory selected = selectedCategoryId == null ? gui.categories.first() : gui.categories.byId(selectedCategoryId);
         MenuHolder holder = new MenuHolder();
         Inventory inventory = gui.createInventory(holder, "create", Map.of(
-                "category", selected == null ? "Не выбрана" : selected.displayName(),
+                "category", selected == null ? "Не выбрана" : gui.messages.escapeTags(selected.displayName()),
                 "priority", String.valueOf(safePriority)
         ));
         gui.fillBackground(inventory);
@@ -52,11 +57,11 @@ final class PlayerTicketMenu {
         for (TicketCategory category : gui.categories.all()) {
             boolean active = selected != null && selected.id().equalsIgnoreCase(category.id());
             List<String> lore = new ArrayList<>(category.description());
-            lore.add(active ? "<#88C999>Выбрано" : "<#FBE8EE>Нажми, чтобы выбрать.");
+            appendSelectionHint(lore, active);
             GuiItemConfig item = new GuiItemConfig(
                     category.slot(),
                     category.material(),
-                    "<" + category.color() + ">" + category.displayName(),
+                    "<" + category.color() + ">" + gui.messages.escapeTags(category.displayName()),
                     lore,
                     category.amount(),
                     category.glow(),
@@ -68,11 +73,13 @@ final class PlayerTicketMenu {
         int[] prioritySlots = {29, 30, 31, 32, 33};
         for (int priority = 1; priority <= 5; priority++) {
             boolean active = priority == safePriority;
+            List<String> lore = new ArrayList<>();
+            appendSelectionHint(lore, active);
             GuiItemConfig item = new GuiItemConfig(
                     prioritySlots[priority - 1],
                     gui.text.priorityMaterial(priority),
                     gui.text.priorityColor(priority) + "Важность " + priority + ": " + gui.text.priorityName(priority),
-                    List.of(active ? "<#88C999>Выбрано" : "<#FBE8EE>Нажми, чтобы выбрать.")
+                    lore
             );
             int selectedValue = priority;
             gui.placeClickableItem(inventory, holder, item, Map.of(), event -> gui.showTicketCreation(player, selected == null ? null : selected.id(), selectedValue));
@@ -87,8 +94,15 @@ final class PlayerTicketMenu {
                 ready ? List.of("<#FBE8EE>Нажми и напиши текст в чат.", "<#6B5961>Для отмены напиши: отмена.") : List.of("<#FBE8EE>Нет прав на выбранную категорию.")
         );
         gui.placeClickableItem(inventory, holder, finalizeItem, Map.of(), event -> {
+            if (!player.hasPermission(PermissionNodes.CREATE)) {
+                gui.messages.send(player, "errors.no-permission");
+                return;
+            }
             if (!ready) {
                 gui.messages.send(player, "errors.category-no-permission");
+                return;
+            }
+            if (!gui.canStartChatInput(player)) {
                 return;
             }
             gui.chatInputs.awaitCreate(player, selected.id(), safePriority);
@@ -97,5 +111,12 @@ final class PlayerTicketMenu {
         });
         gui.placeClickableItem(inventory, holder, gui.itemAt(gui.guiConfig.item("navigation.back", 45, "ARROW", "<#FBE8EE>Вернуться", List.of()), 45), Map.of(), event -> gui.showPlayerHome(player));
         player.openInventory(inventory);
+    }
+
+    private void appendSelectionHint(List<String> lore, boolean selected) {
+        String hint = gui.guiConfig.selectionHint(selected);
+        if (!hint.isBlank()) {
+            lore.add(hint);
+        }
     }
 }

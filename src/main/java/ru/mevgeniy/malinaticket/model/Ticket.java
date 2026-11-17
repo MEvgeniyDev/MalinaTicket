@@ -54,6 +54,15 @@ public final class Ticket {
         return id;
     }
 
+    public Ticket copy() {
+        Ticket copy = new Ticket(id, ownerUuid, ownerName, status, categoryId, priority, createdAt, updatedAt, location, messages);
+        copy.assignedToUuid = assignedToUuid;
+        copy.assignedToName = assignedToName;
+        copy.closedMeta(closedByUuid, closedByName, closedAt, closeReason);
+        copy.deletedMeta(deletedByUuid, deletedByName, deletedAt);
+        return copy;
+    }
+
     public UUID ownerUuid() {
         return ownerUuid;
     }

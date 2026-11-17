@@ -83,15 +83,34 @@ public final class GuiService {
     }
 
     public void showTicketDetails(Player player, Ticket ticket) {
-        ticketViewMenu.openTicketDetails(player, ticket);
+        withCurrentTicket(player, ticket.id(), current -> ticketViewMenu.openTicketDetails(player, current));
     }
 
     public void showCloseReasonPicker(Player player, Ticket ticket) {
-        closeReasonMenu.openReasonPicker(player, ticket);
+        withCurrentTicket(player, ticket.id(), current -> closeReasonMenu.openReasonPicker(player, current));
+    }
+
+    void withCurrentTicket(Player player, int id, Consumer<Ticket> action) {
+        Ticket current = storage.byId(id);
+        if (current == null) {
+            messages.send(player, "errors.ticket-not-found");
+        } else if (!ticketService.canView(player, current)) {
+            messages.send(player, "errors.no-permission");
+        } else {
+            action.accept(current);
+        }
+    }
+
+    boolean canStartChatInput(Player player) {
+        if (settings.captureChatInputs()) {
+            return true;
+        }
+        messages.send(player, "input.disabled");
+        return false;
     }
 
     public void playClick(Player player) {
-        if (settings.guiClickSound()) {
+        if (settings.guiClickSound() && settings.clickSound() != null) {
             player.playSound(player.getLocation(), settings.clickSound(), 0.35F, 1.25F);
         }
     }

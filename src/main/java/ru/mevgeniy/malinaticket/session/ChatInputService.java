@@ -25,8 +25,8 @@ public final class ChatInputService {
         return Optional.ofNullable(inputs.remove(player.getUniqueId()));
     }
 
-    public boolean hasInput(Player player) {
-        return inputs.containsKey(player.getUniqueId());
+    public void clear() {
+        inputs.clear();
     }
 
     public boolean cancel(Player player) {

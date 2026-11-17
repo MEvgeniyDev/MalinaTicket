@@ -1,6 +1,7 @@
 package ru.mevgeniy.malinaticket.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,8 +29,8 @@ class TicketStorageTest {
         storage.loadAll();
 
         Ticket ticket = storage.createTicket(owner, "TestPlayer", new Location(null, 10.2D, 64D, -5.8D, 90F, 0F), "bug", 4, "Первый текст");
-        ticket.addMessage(new TicketMessage(null, "Console", true, 1_700_000_000_000L, "Ответ персонала"));
-        storage.saveTicket(ticket);
+        assertNotNull(storage.updateTicket(ticket, changed ->
+                changed.addMessage(new TicketMessage(null, "Console", true, 1_700_000_000_000L, "Ответ персонала"))));
         storage.addPendingNotification(owner, "Есть ответ по тикету");
         storage.setCreationBan(owner, true);
 
@@ -63,6 +64,96 @@ class TicketStorageTest {
         storage.loadAll();
 
         assertEquals(List.of(), storage.allTickets());
+        UUID owner = UUID.randomUUID();
+        assertNotNull(storage.createTicket(owner, "Broken", null, "bug", 3, "Текст"));
+        assertEquals("uuid: [broken", Files.readString(tickets.resolve("Broken.yml")));
+        assertTrue(Files.exists(tickets.resolve(owner + ".yml")));
+    }
+
+    @Test
+    void keepsBothOwnersWhenPlayerRenamesToAnOccupiedName() throws Exception {
+        TicketStorage storage = new TicketStorage(dataFolder.toFile(), Logger.getLogger("MalinaTicketTest"));
+        storage.loadAll();
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        Ticket original = storage.createTicket(first, "Original", null, "bug", 3, "Первый");
+        Ticket occupied = storage.createTicket(second, "Occupied", null, "bug", 3, "Второй");
+        Path directory = dataFolder.resolve("tickets");
+        String occupiedYaml = Files.readString(directory.resolve("Occupied.yml"));
+
+        storage.refreshOwnerName(first, "Occupied");
+        assertTrue(Files.exists(directory.resolve(first + ".yml")));
+        assertFalse(Files.exists(directory.resolve("Original.yml")));
+        assertEquals(occupiedYaml, Files.readString(directory.resolve("Occupied.yml")));
+        storage.loadAll();
+        assertEquals(first, storage.byId(original.id()).ownerUuid());
+        assertEquals(second, storage.byId(occupied.id()).ownerUuid());
+        assertEquals("Occupied", storage.byId(original.id()).ownerName());
+    }
+
+    @Test
+    void rollsBackTicketChangesWhenBackupCannotBeWritten() throws Exception {
+        TicketStorage storage = new TicketStorage(dataFolder.toFile(), Logger.getLogger("MalinaTicketTest"));
+        storage.loadAll();
+        UUID owner = UUID.randomUUID();
+        Ticket ticket = storage.createTicket(owner, "TestPlayer", null, "bug", 3, "Текст");
+        Path backup = dataFolder.resolve("tickets/backups/TestPlayer.yml.bak");
+        Files.createDirectory(backup);
+        Files.writeString(backup.resolve("keep"), "block copy");
+
+        assertNull(storage.updateTicket(ticket, changed -> changed.close(null, "Консоль", "Причина")));
+        assertFalse(storage.purge(ticket));
+        assertEquals(TicketStatus.OPEN, storage.byId(ticket.id()).status());
+        storage.loadAll();
+        assertEquals(TicketStatus.OPEN, storage.byId(ticket.id()).status());
+    }
+
+    @Test
+    void keepsConsoleCloseReasonAfterRestart() {
+        TicketStorage storage = new TicketStorage(dataFolder.toFile(), Logger.getLogger("MalinaTicketTest"));
+        storage.loadAll();
+        Ticket ticket = storage.createTicket(UUID.randomUUID(), "TestPlayer", null, "bug", 3, "Текст");
+        assertNotNull(storage.updateTicket(ticket, changed -> changed.close(null, "Консоль", "Решено")));
+
+        storage.loadAll();
+        assertEquals("Решено", storage.byId(ticket.id()).closeReason());
+        assertEquals("Консоль", storage.byId(ticket.id()).closedByName());
+    }
+
+    @Test
+    void newerEmptyLegacyUuidFileDoesNotHidePlayerTickets() throws Exception {
+        TicketStorage storage = new TicketStorage(dataFolder.toFile(), Logger.getLogger("MalinaTicketTest"));
+        storage.loadAll();
+        UUID owner = UUID.randomUUID();
+        Ticket ticket = storage.createTicket(owner, "TestPlayer", null, "bug", 3, "Тикет игрока");
+        assertNotNull(ticket);
+        Path directory = dataFolder.resolve("tickets");
+        Files.setLastModifiedTime(directory.resolve("TestPlayer.yml"), java.nio.file.attribute.FileTime.fromMillis(1_000L));
+        Files.writeString(directory.resolve(owner + ".yml"), "uuid: " + owner + "\nname: " + owner + "\n");
+
+        storage.loadAll();
+
+        Ticket loaded = storage.byId(ticket.id());
+        assertNotNull(loaded);
+        assertEquals(owner, loaded.ownerUuid());
+        assertEquals("TestPlayer", loaded.ownerName());
+    }
+
+    @Test
+    void olderFileLeftAfterRenameCannotRestorePurgedTicket() throws Exception {
+        TicketStorage storage = new TicketStorage(dataFolder.toFile(), Logger.getLogger("MalinaTicketTest"));
+        storage.loadAll();
+        UUID owner = UUID.randomUUID();
+        Ticket ticket = storage.createTicket(owner, "OldName", null, "bug", 3, "Текст");
+        Path oldFile = dataFolder.resolve("tickets/OldName.yml");
+        String oldYaml = Files.readString(oldFile);
+        storage.refreshOwnerName(owner, "NewName");
+        assertTrue(storage.purge(storage.byId(ticket.id())));
+        Files.writeString(oldFile, oldYaml);
+        Files.setLastModifiedTime(oldFile, java.nio.file.attribute.FileTime.fromMillis(1_000L));
+
+        storage.loadAll();
+        assertNull(storage.byId(ticket.id()));
     }
 
     @Test

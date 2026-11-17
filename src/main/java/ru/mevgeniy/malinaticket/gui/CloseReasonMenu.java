@@ -36,16 +36,27 @@ final class CloseReasonMenu {
         gui.fillBackground(inventory);
 
         for (CloseReasonConfig option : gui.guiConfig.closeReasons(defaultReasons())) {
-            gui.placeClickableItem(inventory, holder, option.item(), placeholders, event -> {
+            gui.placeClickableItem(inventory, holder, option.item(), placeholders, event -> gui.withCurrentTicket(player, ticket.id(), current -> {
+                if (!gui.ticketService.canClose(player, current)) {
+                    gui.messages.send(player, "errors.no-permission");
+                    return;
+                }
+                if (!current.status().canBeClosed()) {
+                    gui.messages.send(player, "errors.ticket-not-open");
+                    return;
+                }
                 if (option.custom()) {
-                    gui.chatInputs.awaitCloseReason(player, ticket.id());
+                    if (!gui.canStartChatInput(player)) {
+                        return;
+                    }
+                    gui.chatInputs.awaitCloseReason(player, current.id());
                     player.closeInventory();
                     gui.messages.send(player, "input.close", placeholders);
                     return;
                 }
-                gui.ticketService.close(player, ticket, option.reason());
-                gui.showTicketDetails(player, ticket);
-            });
+                gui.ticketService.close(player, current, option.reason());
+                gui.showTicketDetails(player, current);
+            }));
         }
 
         gui.placeClickableItem(inventory, holder, gui.itemAt(gui.guiConfig.item("navigation.back", 26, "ARROW", "<#FBE8EE>Вернуться", List.of()), 26), Map.of(), event -> gui.showTicketDetails(player, ticket));

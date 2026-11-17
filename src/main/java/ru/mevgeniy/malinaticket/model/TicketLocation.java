@@ -13,9 +13,12 @@ public record TicketLocation(
         float pitch
 ) {
     public static TicketLocation from(Location location) {
-        String worldName = location.getWorld() == null ? "" : location.getWorld().getName();
+        World world = location == null ? null : location.getWorld();
+        if (world == null) {
+            return null;
+        }
         return new TicketLocation(
-                worldName,
+                world.getName(),
                 location.getX(),
                 location.getY(),
                 location.getZ(),

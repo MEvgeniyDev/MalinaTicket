@@ -32,6 +32,16 @@ public final class GuiConfig {
         return config.getString("menus." + menu + ".title", fallback);
     }
 
+    public String selectionHint(boolean selected) {
+        return selectionHint(config, selected);
+    }
+
+    static String selectionHint(FileConfiguration config, boolean selected) {
+        return selected
+                ? config.getString("menus.create.selected-hint", "<#88C999>Выбрано")
+                : config.getString("menus.create.selection-hint", "<#FBE8EE>Нажми, чтобы выбрать.");
+    }
+
     public int size(String menu, int fallback) {
         int size = config.getInt("menus." + menu + ".size", fallback);
         if (size < 9 || size > 54 || size % 9 != 0) {
@@ -42,12 +52,12 @@ public final class GuiConfig {
 
     public GuiItemConfig item(String path, int slot, String material, String name, List<String> lore) {
         String base = "items." + path + ".";
-        Integer customModelData = config.isSet(base + "custom-model-data") ? config.getInt(base + "custom-model-data") : null;
+        Integer customModelData = config.isInt(base + "custom-model-data") ? config.getInt(base + "custom-model-data") : null;
         return new GuiItemConfig(
                 config.getInt(base + "slot", slot),
                 config.getString(base + "material", material),
                 config.getString(base + "name", name),
-                config.getStringList(base + "lore").isEmpty() ? lore : config.getStringList(base + "lore"),
+                config.isList(base + "lore") ? config.getStringList(base + "lore") : lore,
                 config.getInt(base + "amount", 1),
                 config.getBoolean(base + "glow", false),
                 customModelData

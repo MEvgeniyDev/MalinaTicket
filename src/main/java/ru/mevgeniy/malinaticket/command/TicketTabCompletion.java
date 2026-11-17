@@ -26,6 +26,9 @@ final class TicketTabCompletion {
     }
 
     List<String> complete(CommandSender sender, String[] args) {
+        if (args.length == 0) {
+            return visibleSubcommands(sender);
+        }
         if (args.length == 1) {
             return filter(visibleSubcommands(sender), args[0]);
         }
@@ -70,8 +73,8 @@ final class TicketTabCompletion {
         return switch (subcommand) {
             case "create" -> sender instanceof Player player && player.hasPermission(PermissionNodes.CREATE);
             case "list", "view", "help" -> true;
-            case "comment" -> console || hasAny(sender, PermissionNodes.COMMENT_OWN, PermissionNodes.COMMENT_STAFF, PermissionNodes.STAFF);
-            case "close" -> console || hasAny(sender, PermissionNodes.CLOSE_OWN, PermissionNodes.CLOSE, PermissionNodes.STAFF);
+            case "comment" -> console || hasAny(sender, PermissionNodes.COMMENT_OWN, PermissionNodes.COMMENT_STAFF);
+            case "close" -> console || hasAny(sender, PermissionNodes.CLOSE_OWN, PermissionNodes.CLOSE);
             case "staff" -> sender instanceof Player && hasAny(sender, PermissionNodes.STAFF, PermissionNodes.STAFF_GUI);
             case "assign" -> sender.hasPermission(PermissionNodes.ASSIGN);
             case "reopen" -> sender.hasPermission(PermissionNodes.REOPEN);
@@ -88,8 +91,11 @@ final class TicketTabCompletion {
     }
 
     private List<String> visibleListFilters(CommandSender sender) {
-        List<String> filters = new ArrayList<>(List.of("open", "closed"));
-        if (hasAny(sender, PermissionNodes.VIEW_ALL, PermissionNodes.STAFF)) {
+        List<String> filters = new ArrayList<>();
+        if (sender.hasPermission(PermissionNodes.VIEW_OWN)) {
+            filters.addAll(List.of("open", "closed"));
+        }
+        if (sender.hasPermission(PermissionNodes.VIEW_ALL)) {
             filters.add("all");
         }
         return filters;

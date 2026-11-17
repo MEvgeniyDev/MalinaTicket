@@ -1,6 +1,5 @@
 import java.security.MessageDigest
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.gradle.jvm.tasks.Jar
 
 plugins {
     java
@@ -8,7 +7,7 @@ plugins {
 }
 
 group = "ru.mevgeniy"
-version = "26.5.9"
+version = "26.11.1"
 
 val pluginVersion = version.toString()
 val buildRevision = providers.environmentVariable("GIT_COMMIT").orElse("local")
@@ -21,13 +20,15 @@ dependencies {
     implementation("net.kyori:adventure-text-serializer-legacy:4.25.0")
 
     testImplementation("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+    testImplementation("net.kyori:adventure-text-serializer-plain:4.25.0")
     testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+    toolchain.languageVersion.set(providers.gradleProperty("malinaticketBuildJava")
+        .map { JavaLanguageVersion.of(it.toInt()) }.orElse(JavaLanguageVersion.of(17)))
 }
 
 tasks {
@@ -52,18 +53,7 @@ tasks {
         useJUnitPlatform()
     }
 
-    jar {
-        archiveBaseName.set("MalinaTicket")
-        archiveVersion.set(pluginVersion)
-        manifest {
-            attributes(
-                "Implementation-Title" to "MalinaTicket",
-                "Implementation-Version" to pluginVersion,
-                "Implementation-Vendor" to "MEvgeniy",
-                "Built-From-Revision" to buildRevision.get()
-            )
-        }
-    }
+    jar { enabled = false }
 
     named<ShadowJar>("shadowJar") {
         archiveBaseName.set("MalinaTicket")

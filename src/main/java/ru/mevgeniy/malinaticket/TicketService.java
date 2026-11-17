@@ -3,7 +3,9 @@ package ru.mevgeniy.malinaticket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import ru.mevgeniy.malinaticket.config.CategoryRegistry;
@@ -74,6 +76,10 @@ public final class TicketService {
         }
 
         Ticket ticket = storage.createTicket(player.getUniqueId(), player.getName(), player.getLocation(), category.id(), priority, cleanText);
+        if (ticket == null) {
+            messages.send(player, "errors.storage-write");
+            return null;
+        }
         lastCreation.put(player.getUniqueId(), now);
         messages.send(player, "ticket.created", placeholders(ticket));
         notifyStaff("notify.new-ticket", placeholders(ticket), PermissionNodes.NOTIFY_CREATE);
@@ -87,46 +93,36 @@ public final class TicketService {
         if (!(sender instanceof Player player)) {
             return true;
         }
-        if (ticket.status() == TicketStatus.DELETED && !player.hasPermission(PermissionNodes.VIEW_DELETED)) {
-            return false;
-        }
-        if (ticket.isOwner(player.getUniqueId()) && player.hasPermission(PermissionNodes.VIEW_OWN)) {
+        if (ticket.status() != TicketStatus.DELETED && ticket.isOwner(player.getUniqueId()) && player.hasPermission(PermissionNodes.VIEW_OWN)) {
             return true;
         }
-        if (ticket.status() == TicketStatus.CLOSED && !player.hasPermission(PermissionNodes.VIEW_CLOSED)) {
-            return false;
-        }
-        return player.hasPermission(PermissionNodes.VIEW_ALL) || player.hasPermission(PermissionNodes.STAFF);
+        return canViewStaffTickets(player, ticket.status());
+    }
+
+    public boolean canViewStaffTickets(CommandSender sender, TicketStatus status) {
+        return sender.hasPermission(switch (status) {
+            case OPEN -> PermissionNodes.VIEW_ALL;
+            case CLOSED -> PermissionNodes.VIEW_CLOSED;
+            case DELETED -> PermissionNodes.VIEW_DELETED;
+        });
+    }
+
+    public boolean canOpenStaffMenu(CommandSender sender) {
+        return sender.hasPermission(PermissionNodes.STAFF_GUI) || sender.hasPermission(PermissionNodes.STAFF);
     }
 
     public boolean canComment(CommandSender sender, Ticket ticket) {
-        if (!(sender instanceof Player player)) {
-            return true;
-        }
-        if (!ticket.status().canReceiveComments()) {
-            return false;
-        }
-        if (ticket.isOwner(player.getUniqueId())) {
-            return player.hasPermission(PermissionNodes.COMMENT_OWN);
-        }
-        return player.hasPermission(PermissionNodes.COMMENT_STAFF) || player.hasPermission(PermissionNodes.STAFF);
+        return ticket != null && ticket.status().canReceiveComments() && canView(sender, ticket)
+                && (!(sender instanceof Player player) || player.hasPermission(ticket.isOwner(player.getUniqueId())
+                        ? PermissionNodes.COMMENT_OWN : PermissionNodes.COMMENT_STAFF));
     }
 
     public void addComment(CommandSender sender, Ticket ticket, String text) {
-        if (ticket == null) {
-            messages.send(sender, "errors.ticket-not-found");
+        if (!checkAccess(sender, ticket) || !checkOpen(sender, ticket)) {
             return;
         }
         if (!canComment(sender, ticket)) {
             messages.send(sender, "errors.no-permission");
-            return;
-        }
-        if (ticket.status() == TicketStatus.DELETED) {
-            messages.send(sender, "errors.ticket-deleted");
-            return;
-        }
-        if (!ticket.status().canReceiveComments()) {
-            messages.send(sender, "errors.ticket-not-open");
             return;
         }
         String cleanText = text == null ? "" : text.trim();
@@ -141,45 +137,47 @@ public final class TicketService {
         boolean staff = !(sender instanceof Player player) || !ticket.isOwner(player.getUniqueId());
         UUID uuid = sender instanceof Player player ? player.getUniqueId() : null;
         String name = sender instanceof Player player ? player.getName() : "Консоль";
-        ticket.addMessage(new TicketMessage(uuid, name, staff, System.currentTimeMillis(), cleanText));
-        storage.saveTicket(ticket);
-        messages.send(sender, "ticket.comment-added", placeholders(ticket));
+        Ticket updated = saveChange(sender, ticket,
+                changed -> changed.addMessage(new TicketMessage(uuid, name, staff, System.currentTimeMillis(), cleanText)));
+        if (updated == null) {
+            return;
+        }
+        messages.send(sender, "ticket.comment-added", placeholders(updated));
         if (staff) {
-            notifyOwner(ticket, "notify.owner-comment", "offline.owner-comment");
+            notifyOwner(updated, "notify.owner-comment", "offline.owner-comment");
         } else {
-            notifyStaff("notify.player-comment", placeholders(ticket), PermissionNodes.NOTIFY_COMMENT);
+            notifyStaff("notify.player-comment", placeholders(updated), PermissionNodes.NOTIFY_COMMENT);
         }
     }
 
     public void close(CommandSender sender, Ticket ticket, String reason) {
-        if (ticket == null) {
-            messages.send(sender, "errors.ticket-not-found");
+        if (!checkAccess(sender, ticket)) {
             return;
         }
         if (!canClose(sender, ticket)) {
             messages.send(sender, "errors.no-permission");
             return;
         }
-        if (ticket.status() == TicketStatus.DELETED) {
-            messages.send(sender, "errors.ticket-deleted");
-            return;
-        }
-        if (!ticket.status().canBeClosed()) {
-            messages.send(sender, "errors.ticket-not-open");
+        if (!checkOpen(sender, ticket)) {
             return;
         }
         UUID uuid = sender instanceof Player player ? player.getUniqueId() : null;
         String name = sender instanceof Player player ? player.getName() : "Консоль";
-        ticket.close(uuid, name, reason == null || reason.isBlank() ? "Причина не указана" : reason.trim());
-        storage.saveTicket(ticket);
-        messages.send(sender, "ticket.closed", placeholders(ticket));
-        notifyOwner(ticket, "notify.owner-closed", "offline.owner-closed");
-        notifyStaff("notify.staff-closed", placeholders(ticket), PermissionNodes.NOTIFY_CLOSE);
+        String cleanReason = reason == null || reason.isBlank() ? "Причина не указана" : reason.trim();
+        if (cleanReason.length() > settings.maxMessageLength()) {
+            messages.send(sender, "errors.message-too-long", Map.of("max", String.valueOf(settings.maxMessageLength())));
+            return;
+        }
+        Ticket updated = saveChange(sender, ticket, changed -> changed.close(uuid, name, cleanReason));
+        if (updated != null) {
+            messages.send(sender, "ticket.closed", placeholders(updated));
+            notifyOwner(updated, "notify.owner-closed", "offline.owner-closed");
+            notifyStaff("notify.staff-closed", placeholders(updated), PermissionNodes.NOTIFY_CLOSE);
+        }
     }
 
     public void reopen(CommandSender sender, Ticket ticket) {
-        if (ticket == null) {
-            messages.send(sender, "errors.ticket-not-found");
+        if (!checkAccess(sender, ticket)) {
             return;
         }
         if (!sender.hasPermission(PermissionNodes.REOPEN)) {
@@ -194,15 +192,15 @@ public final class TicketService {
             messages.send(sender, "errors.ticket-not-closed");
             return;
         }
-        ticket.reopen();
-        storage.saveTicket(ticket);
-        messages.send(sender, "ticket.reopened", placeholders(ticket));
-        notifyOwner(ticket, "notify.owner-reopened", "offline.owner-reopened");
+        Ticket updated = saveChange(sender, ticket, Ticket::reopen);
+        if (updated != null) {
+            messages.send(sender, "ticket.reopened", placeholders(updated));
+            notifyOwner(updated, "notify.owner-reopened", "offline.owner-reopened");
+        }
     }
 
     public void delete(CommandSender sender, Ticket ticket) {
-        if (ticket == null) {
-            messages.send(sender, "errors.ticket-not-found");
+        if (!checkAccess(sender, ticket)) {
             return;
         }
         if (!sender.hasPermission(PermissionNodes.DELETE)) {
@@ -215,14 +213,14 @@ public final class TicketService {
         }
         UUID uuid = sender instanceof Player player ? player.getUniqueId() : null;
         String name = sender instanceof Player player ? player.getName() : "Консоль";
-        ticket.markDeleted(uuid, name);
-        storage.saveTicket(ticket);
-        messages.send(sender, "ticket.deleted", placeholders(ticket));
+        Ticket updated = saveChange(sender, ticket, changed -> changed.markDeleted(uuid, name));
+        if (updated != null) {
+            messages.send(sender, "ticket.deleted", placeholders(updated));
+        }
     }
 
     public void purge(CommandSender sender, Ticket ticket) {
-        if (ticket == null) {
-            messages.send(sender, "errors.ticket-not-found");
+        if (!checkAccess(sender, ticket)) {
             return;
         }
         if (!sender.hasPermission(PermissionNodes.PURGE)) {
@@ -234,40 +232,87 @@ public final class TicketService {
             return;
         }
         int id = ticket.id();
-        storage.purge(ticket);
+        if (!storage.purge(ticket)) {
+            messages.send(sender, "errors.storage-write");
+            return;
+        }
         messages.send(sender, "ticket.purged", Map.of("id", String.valueOf(id)));
     }
 
     public void assign(CommandSender sender, Ticket ticket, Player target) {
-        if (ticket == null) {
-            messages.send(sender, "errors.ticket-not-found");
+        if (!checkAccess(sender, ticket)) {
             return;
         }
         if (!sender.hasPermission(PermissionNodes.ASSIGN)) {
             messages.send(sender, "errors.no-permission");
             return;
         }
-        if (ticket.status() == TicketStatus.DELETED) {
-            messages.send(sender, "errors.ticket-deleted");
+        if (!checkOpen(sender, ticket)) {
             return;
         }
-        if (!ticket.status().canBeAssigned()) {
-            messages.send(sender, "errors.ticket-not-open");
-            return;
+        Ticket updated = saveChange(sender, ticket, changed -> changed.assign(target.getUniqueId(), target.getName()));
+        if (updated != null) {
+            messages.send(sender, "ticket.assigned", placeholders(updated));
         }
-        ticket.assign(target.getUniqueId(), target.getName());
-        storage.saveTicket(ticket);
-        messages.send(sender, "ticket.assigned", placeholders(ticket));
     }
 
     public boolean canClose(CommandSender sender, Ticket ticket) {
+        if (!canView(sender, ticket)) {
+            return false;
+        }
         if (!(sender instanceof Player player)) {
             return true;
         }
         if (ticket.isOwner(player.getUniqueId())) {
             return player.hasPermission(PermissionNodes.CLOSE_OWN);
         }
-        return player.hasPermission(PermissionNodes.CLOSE) || player.hasPermission(PermissionNodes.STAFF);
+        return player.hasPermission(PermissionNodes.CLOSE);
+    }
+
+    public void teleport(Player player, Ticket ticket) {
+        if (!player.hasPermission(PermissionNodes.TELEPORT)) {
+            messages.send(player, "errors.no-permission");
+            return;
+        }
+        if (!checkAccess(player, ticket)) {
+            return;
+        }
+        Location location = ticket.location() == null ? null : ticket.location().toBukkitLocation();
+        if (location == null) {
+            messages.send(player, "errors.world-not-found");
+        } else if (player.teleport(location)) {
+            messages.send(player, "ticket.teleported", placeholders(ticket));
+        } else {
+            messages.send(player, "errors.teleport-failed");
+        }
+    }
+
+    private boolean checkAccess(CommandSender sender, Ticket ticket) {
+        if (ticket == null || storage.byId(ticket.id()) != ticket) {
+            messages.send(sender, "errors.ticket-not-found");
+            return false;
+        }
+        if (!canView(sender, ticket)) {
+            messages.send(sender, "errors.no-permission");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean checkOpen(CommandSender sender, Ticket ticket) {
+        if (ticket.status() == TicketStatus.OPEN) {
+            return true;
+        }
+        messages.send(sender, ticket.status() == TicketStatus.DELETED ? "errors.ticket-deleted" : "errors.ticket-not-open");
+        return false;
+    }
+
+    private Ticket saveChange(CommandSender sender, Ticket ticket, Consumer<Ticket> change) {
+        Ticket updated = storage.updateTicket(ticket, change);
+        if (updated == null) {
+            messages.send(sender, "errors.storage-write");
+        }
+        return updated;
     }
 
     public Map<String, String> placeholders(Ticket ticket) {
@@ -280,8 +325,8 @@ public final class TicketService {
         map.put("player", escape(ticket.ownerName()));
         map.put("status", ticket.status().displayName());
         map.put("status_raw", ticket.status().name());
-        map.put("category", category == null ? ticket.categoryId() : escape(category.displayName()));
-        map.put("category_id", ticket.categoryId());
+        map.put("category", escape(category == null ? ticket.categoryId() : category.displayName()));
+        map.put("category_id", escape(ticket.categoryId()));
         map.put("priority", String.valueOf(ticket.priority()));
         map.put("created", timeFormatter.format(ticket.createdAt()));
         map.put("updated", timeFormatter.format(ticket.updatedAt()));
@@ -298,7 +343,7 @@ public final class TicketService {
 
     private void notifyStaff(String messagePath, Map<String, String> placeholders, String permission) {
         for (Player online : Bukkit.getOnlinePlayers()) {
-            if (online.hasPermission(permission) || online.hasPermission(PermissionNodes.STAFF)) {
+            if (online.hasPermission(permission)) {
                 messages.send(online, messagePath, placeholders);
             }
         }

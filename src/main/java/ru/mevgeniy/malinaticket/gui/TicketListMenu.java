@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -20,38 +22,47 @@ final class TicketListMenu {
     }
 
     void openOwnTickets(Player player, TicketStatus status, int page) {
+        if (!player.hasPermission(PermissionNodes.VIEW_OWN)) {
+            gui.messages.send(player, "errors.no-permission");
+            return;
+        }
         List<Ticket> tickets = gui.storage.ownTickets(player.getUniqueId(), true, false).stream()
                 .filter(ticket -> ticket.status() == status)
                 .toList();
-        openTickets(player, tickets, "list", page, event -> gui.showPlayerHome(player));
+        openTickets(player, tickets, page, event -> gui.showPlayerHome(player), next -> openOwnTickets(player, status, next));
     }
 
     void openStaffTickets(Player player, TicketStatus status, String categoryId, boolean assignedOnly, int page) {
-        if (!player.hasPermission(PermissionNodes.VIEW_ALL) && !player.hasPermission(PermissionNodes.STAFF)) {
-            gui.messages.send(player, "errors.no-permission");
-            return;
-        }
-        if (status == TicketStatus.DELETED && !player.hasPermission(PermissionNodes.VIEW_DELETED)) {
-            gui.messages.send(player, "errors.no-permission");
-            return;
-        }
-        if (status == TicketStatus.CLOSED && !player.hasPermission(PermissionNodes.VIEW_CLOSED) && !player.hasPermission(PermissionNodes.STAFF)) {
+        if (!gui.ticketService.canViewStaffTickets(player, status)) {
             gui.messages.send(player, "errors.no-permission");
             return;
         }
         List<Ticket> tickets = gui.storage.staffTickets(status, categoryId, assignedOnly ? player.getUniqueId() : null);
-        openTickets(player, tickets, "list", page, event -> gui.showStaffDashboard(player));
+        openTickets(player, tickets, page, event -> gui.showStaffDashboard(player), next -> openStaffTickets(player, status, categoryId, assignedOnly, next));
     }
 
-    private void openTickets(Player player, List<Ticket> tickets, String menuName, int page, Consumer<InventoryClickEvent> backAction) {
-        int perPage = Math.min(gui.settings.ticketsPerPage(), gui.guiConfig.ticketSlots().size());
+    private void openTickets(Player player, List<Ticket> tickets, int page, Consumer<InventoryClickEvent> backAction, IntConsumer openPage) {
+        GuiItemConfig previous = gui.guiConfig.item("navigation.previous", 45, "ARROW", "<#FBE8EE>Страница назад", List.of());
+        GuiItemConfig back = gui.guiConfig.item("navigation.back", 49, "ARROW", "<#FBE8EE>Вернуться", List.of());
+        GuiItemConfig next = gui.guiConfig.item("navigation.next", 53, "ARROW", "<#FBE8EE>Страница вперед", List.of());
+        int size = gui.guiConfig.size("list", 54);
+        GuiItemConfig previousButton = navigationAt(previous, size - 9, size);
+        GuiItemConfig backButton = navigationAt(back, size - 5, size);
+        GuiItemConfig nextButton = navigationAt(next, size - 1, size);
+        List<Integer> slots = gui.guiConfig.ticketSlots().stream().distinct()
+                .filter(slot -> slot >= 0 && slot < size && slot != previousButton.slot() && slot != backButton.slot() && slot != nextButton.slot())
+                .toList();
+        if (slots.isEmpty()) {
+            slots = IntStream.range(0, size).boxed()
+                    .filter(slot -> slot != previousButton.slot() && slot != backButton.slot() && slot != nextButton.slot()).toList();
+        }
+        int perPage = Math.min(gui.settings.ticketsPerPage(), slots.size());
         int maxPage = Math.max(0, (tickets.size() - 1) / perPage);
         int safePage = Math.max(0, Math.min(page, maxPage));
         MenuHolder holder = new MenuHolder();
-        Inventory inventory = gui.createInventory(holder, menuName, Map.of("page", String.valueOf(safePage + 1), "pages", String.valueOf(maxPage + 1)));
+        Inventory inventory = gui.createInventory(holder, "list", Map.of("page", String.valueOf(safePage + 1), "pages", String.valueOf(maxPage + 1)));
         gui.fillBackground(inventory);
 
-        List<Integer> slots = gui.guiConfig.ticketSlots();
         int start = safePage * perPage;
         int end = Math.min(tickets.size(), start + perPage);
         for (int index = start; index < end; index++) {
@@ -70,12 +81,16 @@ final class TicketListMenu {
         }
 
         if (safePage > 0) {
-            gui.placeClickableItem(inventory, holder, gui.guiConfig.item("navigation.previous", 45, "ARROW", "<#FBE8EE>Страница назад", List.of()), Map.of(), event -> openTickets(player, tickets, menuName, safePage - 1, backAction));
+            gui.placeClickableItem(inventory, holder, previousButton, Map.of(), event -> openPage.accept(safePage - 1));
         }
-        gui.placeClickableItem(inventory, holder, gui.guiConfig.item("navigation.back", 49, "ARROW", "<#FBE8EE>Вернуться", List.of()), Map.of(), backAction);
+        gui.placeClickableItem(inventory, holder, backButton, Map.of(), backAction);
         if (safePage < maxPage) {
-            gui.placeClickableItem(inventory, holder, gui.guiConfig.item("navigation.next", 53, "ARROW", "<#FBE8EE>Страница вперед", List.of()), Map.of(), event -> openTickets(player, tickets, menuName, safePage + 1, backAction));
+            gui.placeClickableItem(inventory, holder, nextButton, Map.of(), event -> openPage.accept(safePage + 1));
         }
         player.openInventory(inventory);
+    }
+
+    private GuiItemConfig navigationAt(GuiItemConfig item, int fallback, int size) {
+        return item.slot() >= 0 && item.slot() < size ? item : gui.itemAt(item, fallback);
     }
 }

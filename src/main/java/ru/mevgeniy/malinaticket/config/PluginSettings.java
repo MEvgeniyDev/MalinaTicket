@@ -15,7 +15,7 @@ public final class PluginSettings {
     private Sound clickSound;
     private String dateFormat;
     private String timeZone;
-    private boolean captureChatInputs;
+    private volatile boolean captureChatInputs;
 
     public PluginSettings(JavaPlugin plugin) {
         this.plugin = plugin;

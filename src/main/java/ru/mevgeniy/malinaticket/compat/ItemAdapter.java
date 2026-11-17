@@ -1,15 +1,27 @@
 package ru.mevgeniy.malinaticket.compat;
 
+import java.lang.reflect.Method;
 import java.util.logging.Logger;
+import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.meta.ItemMeta;
 
 public final class ItemAdapter {
+    private static final Method GLINT_OVERRIDE = findGlintOverride();
+
     private ItemAdapter() {
     }
 
     public static void applyGlow(ItemMeta meta) {
+        if (GLINT_OVERRIDE != null) {
+            try {
+                GLINT_OVERRIDE.invoke(meta, true);
+                return;
+            } catch (ReflectiveOperationException ignored) {
+                // Используем обычное зачарование, если ядро не применило свечение.
+            }
+        }
         Enchantment glowEnchant = glowEnchantment();
         if (glowEnchant == null) {
             return;
@@ -31,20 +43,22 @@ public final class ItemAdapter {
 
     @SuppressWarnings("deprecation")
     private static Enchantment glowEnchantment() {
-        for (String name : new String[]{"DURABILITY", "UNBREAKING"}) {
-            Enchantment enchantment = Enchantment.getByName(name);
-            if (enchantment != null) {
-                return enchantment;
-            }
-            try {
-                Object value = Enchantment.class.getField(name).get(null);
-                if (value instanceof Enchantment reflected) {
-                    return reflected;
-                }
-            } catch (ReflectiveOperationException ignored) {
-            }
+        Enchantment enchantment = Enchantment.getByKey(NamespacedKey.minecraft("unbreaking"));
+        if (enchantment != null) {
+            return enchantment;
         }
-        Enchantment[] values = Enchantment.values();
-        return values.length == 0 ? null : values[0];
+        try {
+            return (Enchantment) Enchantment.class.getField("DURABILITY").get(null);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private static Method findGlintOverride() {
+        try {
+            return ItemMeta.class.getMethod("setEnchantmentGlintOverride", Boolean.class);
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        }
     }
 }

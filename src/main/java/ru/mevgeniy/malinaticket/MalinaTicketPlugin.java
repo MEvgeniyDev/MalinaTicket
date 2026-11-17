@@ -41,8 +41,8 @@ public final class MalinaTicketPlugin extends JavaPlugin {
         ticketService = new TicketService(storage, settings, messages, categories);
         guiService = new GuiService(storage, ticketService, settings, messages, guiConfig, categories, chatInputs);
 
-        getServer().getPluginManager().registerEvents(new GuiListener(guiService), this);
-        getServer().getPluginManager().registerEvents(new ChatInputListener(this, settings, messages, chatInputs, storage, ticketService), this);
+        getServer().getPluginManager().registerEvents(new GuiListener(this, guiService), this);
+        new ChatInputListener(this, settings, messages, chatInputs, storage, ticketService).register();
         getServer().getPluginManager().registerEvents(new JoinListener(storage, messages), this);
 
         TicketCommand command = new TicketCommand(storage, ticketService, guiService, messages, chatInputs, this::reloadEverything);
@@ -52,11 +52,14 @@ public final class MalinaTicketPlugin extends JavaPlugin {
             pluginCommand.setTabCompleter(command);
         }
 
-        getLogger().info("MalinaTicket 26.5.9 включен. Хранилище: plugins/MalinaTicket/tickets/<ник>.yml");
+        getLogger().info("MalinaTicket " + getDescription().getVersion() + " включен. Хранилище: plugins/MalinaTicket/tickets/");
     }
 
     @Override
     public void onDisable() {
+        if (chatInputs != null) {
+            chatInputs.clear();
+        }
         if (messages != null) {
             messages.close();
         }
@@ -70,6 +73,9 @@ public final class MalinaTicketPlugin extends JavaPlugin {
 
     public void reloadEverything() {
         settings.reload();
+        if (!settings.captureChatInputs()) {
+            chatInputs.clear();
+        }
         messages.reload();
         categories.reload();
         guiConfig.reload();

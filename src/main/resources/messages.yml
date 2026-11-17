@@ -2,6 +2,8 @@ plugin:
   reloaded: "<#88C999>Конфиги MalinaTicket перезагружены."
 
 input:
+  disabled: "<#E05A47>Ввод текста через чат отключен в настройках плагина."
+  read-failed: "<#E05A47>Не удалось прочитать сообщение. Начните ввод заново."
   create: "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>Напиши текст обращения в чат. <click:run_command:'/ticket cancel'><hover:show_text:'<#FBE8EE>Отменить ввод'><#E05A47>[Отмена]</hover></click>"
   comment: "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>Напиши ответ в тикет <#F4A6B8>#%id%<#FBE8EE>. <click:run_command:'/ticket cancel'><hover:show_text:'<#FBE8EE>Отменить ввод'><#E05A47>[Отмена]</hover></click>"
   close: "<#D94F70><bold>MalinaTicket</bold> <#6B5961>| <#FBE8EE>Напиши причину закрытия тикета <#F4A6B8>#%id%<#FBE8EE>. <click:run_command:'/ticket cancel'><hover:show_text:'<#FBE8EE>Отменить ввод'><#E05A47>[Отмена]</hover></click>"
@@ -9,6 +11,8 @@ input:
   nothing-to-cancel: "<#6B5961>Сейчас нечего отменять."
 
 errors:
+  storage-write: "<#E05A47>Не удалось сохранить изменения. Сообщите администратору сервера."
+  teleport-failed: "<#E05A47>Телепортация к месту создания тикета отменена."
   no-permission: "<#E05A47>Недостаточно прав для этого действия."
   only-player: "<#E05A47>Эта команда доступна только игроку."
   unknown-command: "<#E05A47>Неизвестная подкоманда."

@@ -2,6 +2,7 @@ package ru.mevgeniy.malinaticket.gui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import ru.mevgeniy.malinaticket.compat.TextAdapter;
 import ru.mevgeniy.malinaticket.config.PluginSettings;
 import ru.mevgeniy.malinaticket.model.Ticket;
@@ -11,16 +12,14 @@ import ru.mevgeniy.malinaticket.util.TimeFormatter;
 final class GuiTextFormatter {
     static final int LORE_WRAP_WIDTH = 38;
 
-    private final String dateFormat;
-    private final String timeZone;
+    private final Supplier<TimeFormatter> timeFormatter;
 
     GuiTextFormatter(PluginSettings settings) {
-        this(settings.dateFormat(), settings.timeZone());
+        timeFormatter = () -> new TimeFormatter(settings.dateFormat(), settings.timeZone());
     }
 
     GuiTextFormatter(String dateFormat, String timeZone) {
-        this.dateFormat = dateFormat;
-        this.timeZone = timeZone;
+        timeFormatter = () -> new TimeFormatter(dateFormat, timeZone);
     }
 
     String priorityMaterial(int priority) {
@@ -63,26 +62,36 @@ final class GuiTextFormatter {
 
         List<String> lore = new ArrayList<>();
         List<TicketMessage> ticketMessages = ticket.messages();
-        TimeFormatter formatter = new TimeFormatter(dateFormat, timeZone);
+        TimeFormatter formatter = timeFormatter.get();
         for (int index = 0; index < ticketMessages.size(); index++) {
             TicketMessage message = ticketMessages.get(index);
             lore.add("<#F4A6B8>" + escape(message.authorName()) + " <#6B5961>(" + formatter.format(message.timestamp()) + ")");
-            lore.addAll(wrapLore(escape(message.text()), "<#FBE8EE>", LORE_WRAP_WIDTH));
+            lore.addAll(wrapLore(message.text(), "<#FBE8EE>", LORE_WRAP_WIDTH));
             if (index + 1 < ticketMessages.size()) {
                 lore.add(" ");
             }
         }
-        return lore;
+        if (lore.size() <= 256) {
+            return lore;
+        }
+        int start = lore.size() - 255;
+        while (start < lore.size() - 1 && !lore.get(start - 1).equals(" ")) {
+            start++;
+        }
+        List<String> recent = new ArrayList<>();
+        recent.add("<#6B5961>Часть ранних сообщений скрыта.");
+        recent.addAll(lore.subList(start, lore.size()));
+        return recent;
     }
 
     String wrapPlaceholder(String text, String color, int width) {
-        List<String> wrapped = wrapLore(escape(text), color, width);
+        List<String> wrapped = wrapLore(text, color, width);
         return String.join("\n", wrapped);
     }
 
     List<String> wrapLore(String text, String color, int width) {
         return wrapPlain(text, width).stream()
-                .map(line -> color + line)
+                .map(line -> color + escape(line))
                 .toList();
     }
 
@@ -130,6 +139,9 @@ final class GuiTextFormatter {
         int start = 0;
         while (start < word.length()) {
             int end = Math.min(start + width, word.length());
+            if (end < word.length() && Character.isSurrogatePair(word.charAt(end - 1), word.charAt(end))) {
+                end += end - start == 1 ? 1 : -1;
+            }
             String part = word.substring(start, end);
             if (end < word.length()) {
                 result.add(part);

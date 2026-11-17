@@ -1,11 +1,17 @@
 package ru.mevgeniy.malinaticket.config;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.mevgeniy.malinaticket.compat.TextAdapter;
 
@@ -27,6 +33,13 @@ public final class MessageService {
             plugin.saveResource("messages.yml", false);
         }
         config = YamlConfiguration.loadConfiguration(file);
+        try (InputStream defaults = plugin.getResource("messages.yml")) {
+            if (defaults != null) {
+                config.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaults, StandardCharsets.UTF_8)));
+            }
+        } catch (IOException exception) {
+            plugin.getLogger().warning("Не удалось прочитать встроенные сообщения: " + exception.getMessage());
+        }
     }
 
     public void send(CommandSender sender, String path) {
@@ -41,12 +54,20 @@ public final class MessageService {
         textAdapter.send(sender, raw, placeholders);
     }
 
+    public void sendPrepared(CommandSender sender, String raw) {
+        textAdapter.sendPrepared(sender, raw);
+    }
+
     public String text(String path, Map<String, String> placeholders) {
         return apply(raw(path), placeholders);
     }
 
     public String legacyFromText(String raw, Map<String, String> placeholders) {
         return textAdapter.legacy(raw, placeholders);
+    }
+
+    public void applyItemText(ItemMeta meta, String name, List<String> lore) {
+        textAdapter.applyItemText(meta, name, lore);
     }
 
     public String applyPlaceholders(String raw, Map<String, String> placeholders) {
@@ -62,7 +83,8 @@ public final class MessageService {
     }
 
     private String raw(String path) {
-        return config == null ? MISSING_PREFIX + path : config.getString(path, MISSING_PREFIX + path);
+        String template = config == null ? null : config.getString(path);
+        return template == null ? MISSING_PREFIX + path : template;
     }
 
     private String apply(String raw, Map<String, String> placeholders) {
